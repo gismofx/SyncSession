@@ -1,0 +1,220 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using BenchmarkDotNet.Attributes;
+using Dapper;
+using SyncSystem.Core.Attributes;
+using SyncSystem.Core.Interfaces;
+using SyncSystem.Server.Database;
+using Microsoft.Data.Sqlite;
+
+namespace SyncSystem.Benchmarks.Benchmarks;
+
+/// <summary>
+/// Benchmarks for database operations using in-memory SQLite (fast baseline).
+/// For MySQL-specific operations, use DatabaseMySqlBenchmarks with Testcontainers.
+/// </summary>
+[MemoryDiagnoser]
+[MinColumn, MaxColumn, MeanColumn, MedianColumn]
+public class DatabaseSqliteBenchmarks
+{
+    private SqliteConnection _connection = null!;
+    private List<Customer> _customerBatch = null!;
+    private Guid _sessionId;
+
+    [Params(100, 1000, 10000)]
+    public int BatchSize;
+
+    [GlobalSetup]
+    public async Task Setup()
+    {
+        _sessionId = Guid.NewGuid();
+        
+        // In-memory SQLite
+        _connection = new SqliteConnection("Data Source=:memory:");
+        await _connection.OpenAsync();
+
+        // Create schema
+        await _connection.ExecuteAsync(@"
+            CREATE TABLE Customers (
+                Id TEXT PRIMARY KEY,
+                Name TEXT NOT NULL,
+                Email TEXT NOT NULL,
+                Phone TEXT,
+                IsDirty INTEGER NOT NULL DEFAULT 0,
+                ModifiedAtUtc TEXT NOT NULL,
+                ModifiedByUserId TEXT NOT NULL,
+                SyncSessionId TEXT,
+                IsDeleted INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE INDEX IX_Customers_Dirty ON Customers(IsDirty) WHERE IsDirty = 1;
+            CREATE INDEX IX_Customers_Session ON Customers(SyncSessionId);
+        ");
+    }
+
+    [IterationSetup]
+    public async Task IterationSetup()
+    {
+        // Clear table before each iteration
+        await _connection.ExecuteAsync("DELETE FROM Customers");
+        
+        // Generate fresh test data with new GUIDs
+        _customerBatch = new List<Customer>();
+        for (int i = 0; i < BatchSize; i++)
+        {
+            _customerBatch.Add(new Customer
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = $"Customer {i}",
+                Email = $"customer{i}@example.com",
+                Phone = i % 3 == 0 ? $"555-{i:0000}" : null,
+                IsDirty = i % 2 == 0,
+                ModifiedAtUtc = DateTime.UtcNow,
+                ModifiedByUserId = $"user-{i % 10}",
+                IsDeleted = i % 10 == 0
+            });
+        }
+    }
+
+    [GlobalCleanup]
+    public async Task Cleanup()
+    {
+        await _connection.DisposeAsync();
+    }
+
+    #region Insert Operations
+
+    [Benchmark]
+    public async Task<int> InsertBatch_SingleTransaction()
+    {
+        using var transaction = _connection.BeginTransaction();
+        
+        var count = await _connection.ExecuteAsync(@"
+            INSERT INTO Customers (Id, Name, Email, Phone, IsDirty, ModifiedAtUtc, ModifiedByUserId, IsDeleted)
+            VALUES (@Id, @Name, @Email, @Phone, @IsDirty, @ModifiedAtUtc, @ModifiedByUserId, @IsDeleted)",
+            _customerBatch,
+            transaction);
+
+        transaction.Commit();
+        return count;
+    }
+
+    [Benchmark]
+    public async Task<int> InsertBatch_IndividualInserts()
+    {
+        var count = 0;
+        foreach (var customer in _customerBatch)
+        {
+            count += await _connection.ExecuteAsync(@"
+                INSERT INTO Customers (Id, Name, Email, Phone, IsDirty, ModifiedAtUtc, ModifiedByUserId, IsDeleted)
+                VALUES (@Id, @Name, @Email, @Phone, @IsDirty, @ModifiedAtUtc, @ModifiedByUserId, @IsDeleted)",
+                customer);
+        }
+        return count;
+    }
+
+    #endregion
+
+    #region Upsert Operations
+
+    [Benchmark]
+    public async Task<int> UpsertBatch_OnConflict()
+    {
+        using var transaction = _connection.BeginTransaction();
+        
+        var count = await _connection.ExecuteAsync(@"
+            INSERT INTO Customers (Id, Name, Email, Phone, IsDirty, ModifiedAtUtc, ModifiedByUserId, IsDeleted)
+            VALUES (@Id, @Name, @Email, @Phone, @IsDirty, @ModifiedAtUtc, @ModifiedByUserId, @IsDeleted)
+            ON CONFLICT(Id) DO UPDATE SET
+                Name = excluded.Name,
+                Email = excluded.Email,
+                Phone = excluded.Phone,
+                IsDirty = excluded.IsDirty,
+                ModifiedAtUtc = excluded.ModifiedAtUtc,
+                ModifiedByUserId = excluded.ModifiedByUserId,
+                IsDeleted = excluded.IsDeleted",
+            _customerBatch,
+            transaction);
+
+        transaction.Commit();
+        return count;
+    }
+
+    #endregion
+
+    #region Query Operations
+
+    [Benchmark]
+    public async Task<List<Customer>> SelectDirtyRecords()
+    {
+        var results = await _connection.QueryAsync<Customer>(
+            "SELECT * FROM Customers WHERE IsDirty = 1");
+        return results.ToList();
+    }
+
+    [Benchmark]
+    public async Task<List<Customer>> SelectBySession()
+    {
+        var results = await _connection.QueryAsync<Customer>(
+            "SELECT * FROM Customers WHERE SyncSessionId = @SessionId",
+            new { SessionId = _sessionId.ToString() });
+        return results.ToList();
+    }
+
+    [Benchmark]
+    public async Task<List<Customer>> SelectAll()
+    {
+        var results = await _connection.QueryAsync<Customer>(
+            "SELECT * FROM Customers");
+        return results.ToList();
+    }
+
+    [Benchmark]
+    public async Task<int> CountDirtyRecords()
+    {
+        return await _connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Customers WHERE IsDirty = 1");
+    }
+
+    #endregion
+
+    #region Update Operations
+
+    [Benchmark]
+    public async Task<int> UpdateMarkClean()
+    {
+        return await _connection.ExecuteAsync(
+            "UPDATE Customers SET IsDirty = 0 WHERE IsDirty = 1");
+    }
+
+    [Benchmark]
+    public async Task<int> UpdateSingleField()
+    {
+        return await _connection.ExecuteAsync(
+            "UPDATE Customers SET ModifiedAtUtc = @Now WHERE IsDirty = 1",
+            new { Now = DateTime.UtcNow.ToString("O") });
+    }
+
+    #endregion
+
+    #region Delete Operations
+
+    [Benchmark]
+    public async Task<int> SoftDelete()
+    {
+        return await _connection.ExecuteAsync(
+            "UPDATE Customers SET IsDeleted = 1 WHERE Id IN (SELECT Id FROM Customers LIMIT 10)");
+    }
+
+    [Benchmark]
+    public async Task<int> HardDelete()
+    {
+        return await _connection.ExecuteAsync(
+            "DELETE FROM Customers WHERE Id IN (SELECT Id FROM Customers LIMIT 10)");
+    }
+
+    #endregion
+}

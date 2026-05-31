@@ -1,0 +1,45 @@
+{
+   "Title":"SyncSystem.Benchmarks.Benchmarks.DatabaseInsertBenchmarks-20260125-161632",
+   "HostEnvironmentInfo":{
+      "BenchmarkDotNetCaption":"BenchmarkDotNet",
+      "BenchmarkDotNetVersion":"0.15.8",
+      "OsVersion":"Windows 11 (10.0.26100.7623/24H2/2024Update/HudsonValley)",
+      "ProcessorName":"11th Gen Intel Core i7-11850H 2.50GHz",
+      "PhysicalProcessorCount":1,
+      "PhysicalCoreCount":8,
+      "LogicalCoreCount":16,
+      "RuntimeVersion":".NET 8.0.22 (8.0.22, 8.0.2225.52707)",
+      "Architecture":"X64",
+      "HasAttachedDebugger":false,
+      "HasRyuJit":true,
+      "Configuration":"RELEASE",
+      "DotNetCliVersion":"10.0.101",
+      "ChronometerFrequency":{
+         "Hertz":10000000
+      },
+      "HardwareTimerKind":"Unknown"
+   },
+   "Benchmarks":[
+      {
+         "DisplayInfo":"DatabaseInsertBenchmarks.InsertBatch_SingleTransaction: Job-IUYGTA(InvocationCount=1, IterationCount=10, LaunchCount=1, UnrollFactor=1, WarmupCount=3) [BatchSize=100]",
+         "Namespace":"SyncSystem.Benchmarks.Benchmarks",
+         "Type":"DatabaseInsertBenchmarks",
+         "Method":"InsertBatch_SingleTransaction",
+         "MethodTitle":"InsertBatch_SingleTransaction",
+         "Parameters":"BatchSize=100",
+         "FullName":"SyncSystem.Benchmarks.Benchmarks.DatabaseInsertBenchmarks.InsertBatch_SingleTransaction(BatchSize: 100)",
+         "HardwareIntrinsics":"",
+         "Statistics":null,
+         "Memory":{
+            "Gen0Collections":0,
+            "Gen1Collections":0,
+            "Gen2Collections":0,
+            "TotalOperations":0,
+            "BytesAllocatedPerOperation":null
+         },
+         "Measurements":[
+            
+         ]
+      }
+   ]
+}

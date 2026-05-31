@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>SyncSystem.Benchmarks.Benchmarks.ProductionDatabaseBenchmarks-20260215-212207</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26100.7840/24H2/2024Update/HudsonValley)
+11th Gen Intel Core i7-11850H 2.50GHz, 1 CPU, 16 logical and 8 physical cores
+.NET SDK 10.0.101
+  [Host]     : .NET 8.0.24 (8.0.24, 8.0.2426.7010), X64 RyuJIT x86-64-v4
+  Job-IUYGTA : .NET 8.0.24 (8.0.24, 8.0.2426.7010), X64 RyuJIT x86-64-v4
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Mean   </th><th>StdDev</th><th>Median </th><th>Min    </th><th>Max    </th><th>P95    </th><th>Ratio      </th>
+</tr>
+</thead><tbody><tr><td>1,877.92 &mu;s</td><td>60.963 &mu;s</td><td>1,869.50 &mu;s</td><td>1,807.60 &mu;s</td><td>1,984.10 &mu;s</td><td>1,964.02 &mu;s</td><td>1.21x slower</td>
+</tr><tr><td>84.95 &mu;s</td><td>13.445 &mu;s</td><td>83.05 &mu;s</td><td>68.40 &mu;s</td><td>104.60 &mu;s</td><td>102.31 &mu;s</td><td>18.79x faster</td>
+</tr><tr><td>56.38 &mu;s</td><td>12.018 &mu;s</td><td>57.40 &mu;s</td><td>42.10 &mu;s</td><td>80.20 &mu;s</td><td>74.28 &mu;s</td><td>28.74x faster</td>
+</tr><tr><td>1,560.29 &mu;s</td><td>81.391 &mu;s</td><td>1,545.10 &mu;s</td><td>1,435.60 &mu;s</td><td>1,681.70 &mu;s</td><td>1,666.22 &mu;s</td><td>baseline</td>
+</tr><tr><td>72.00 &mu;s</td><td>10.194 &mu;s</td><td>69.50 &mu;s</td><td>58.60 &mu;s</td><td>92.90 &mu;s</td><td>88.17 &mu;s</td><td>22.04x faster</td>
+</tr><tr><td>59.03 &mu;s</td><td>8.754 &mu;s</td><td>56.20 &mu;s</td><td>50.20 &mu;s</td><td>76.00 &mu;s</td><td>72.60 &mu;s</td><td>26.91x faster</td>
+</tr><tr><td>14,188.67 &mu;s</td><td>276.866 &mu;s</td><td>14,200.90 &mu;s</td><td>13,826.60 &mu;s</td><td>14,616.20 &mu;s</td><td>14,561.16 &mu;s</td><td>1.049x faster</td>
+</tr><tr><td>81.96 &mu;s</td><td>11.969 &mu;s</td><td>82.40 &mu;s</td><td>66.40 &mu;s</td><td>104.20 &mu;s</td><td>99.75 &mu;s</td><td>185.056x faster</td>
+</tr><tr><td>58.50 &mu;s</td><td>5.390 &mu;s</td><td>57.15 &mu;s</td><td>51.30 &mu;s</td><td>66.70 &mu;s</td><td>65.69 &mu;s</td><td>256.330x faster</td>
+</tr><tr><td>14,885.76 &mu;s</td><td>190.532 &mu;s</td><td>14,863.00 &mu;s</td><td>14,612.30 &mu;s</td><td>15,215.50 &mu;s</td><td>15,165.46 &mu;s</td><td>baseline</td>
+</tr><tr><td>73.14 &mu;s</td><td>11.773 &mu;s</td><td>69.10 &mu;s</td><td>61.20 &mu;s</td><td>98.60 &mu;s</td><td>90.68 &mu;s</td><td>207.856x faster</td>
+</tr><tr><td>51.24 &mu;s</td><td>1.818 &mu;s</td><td>51.55 &mu;s</td><td>48.35 &mu;s</td><td>54.35 &mu;s</td><td>53.71 &mu;s</td><td>290.841x faster</td>
+</tr><tr><td>102,440.40 &mu;s</td><td>3,305.117 &mu;s</td><td>102,907.80 &mu;s</td><td>95,285.20 &mu;s</td><td>106,047.20 &mu;s</td><td>105,667.62 &mu;s</td><td>1.090x faster</td>
+</tr><tr><td>192.49 &mu;s</td><td>14.957 &mu;s</td><td>192.10 &mu;s</td><td>170.30 &mu;s</td><td>217.20 &mu;s</td><td>212.60 &mu;s</td><td>582.449x faster</td>
+</tr><tr><td>110.20 &mu;s</td><td>15.156 &mu;s</td><td>107.75 &mu;s</td><td>91.20 &mu;s</td><td>134.10 &mu;s</td><td>133.43 &mu;s</td><td>1,028.724x faster</td>
+</tr><tr><td>111,509.52 &mu;s</td><td>1,402.052 &mu;s</td><td>111,882.70 &mu;s</td><td>109,093.00 &mu;s</td><td>113,736.00 &mu;s</td><td>113,301.92 &mu;s</td><td>baseline</td>
+</tr><tr><td>175.06 &mu;s</td><td>19.339 &mu;s</td><td>171.15 &mu;s</td><td>151.40 &mu;s</td><td>206.60 &mu;s</td><td>203.41 &mu;s</td><td>643.791x faster</td>
+</tr><tr><td>109.03 &mu;s</td><td>20.025 &mu;s</td><td>110.85 &mu;s</td><td>85.70 &mu;s</td><td>144.90 &mu;s</td><td>139.14 &mu;s</td><td>1,053.517x faster</td>
+</tr></tbody></table>
+</body>
+</html>
