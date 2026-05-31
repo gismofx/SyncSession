@@ -29,20 +29,20 @@ public static class SyncSessionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configure">Action to configure <see cref="SyncSessionOptions"/>.</param>
     /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
-    public static IServiceCollection AddSyncSystem(
+    public static IServiceCollection AddSyncSession(
         this IServiceCollection services,
         Action<SyncSessionOptions> configure)
     {
         var options = new SyncSessionOptions();
         configure(options);
         services.AddSingleton(options); // available for MapSyncEndpoints swagger check
-        return services.AddSyncSystem(options);
+        return services.AddSyncSession(options);
     }
 
     /// <summary>
     /// Registers all SyncSystem services using a pre-built <see cref="SyncSessionOptions"/> instance.
     /// </summary>
-    public static IServiceCollection AddSyncSystem(
+    public static IServiceCollection AddSyncSession(
         this IServiceCollection services,
         SyncSessionOptions options)
     {
@@ -147,9 +147,9 @@ public static class SyncSessionExtensions
     /// </exception>
     /// <remarks>
     /// Mirrors the standard ASP.NET Core <c>AddX()</c> / <c>UseX()</c> / <c>MapX()</c> pattern.
-    /// <c>UseSyncSystem()</c> will also house <c>AutoMigrate</c> when that feature arrives (Session 29a).
+    /// <c>UseSyncSession()</c> will also house <c>AutoMigrate</c> when that feature arrives (Session 29a).
     /// </remarks>
-    public static async Task<WebApplication> UseSyncSystem(this WebApplication app)
+    public static async Task<WebApplication> UseSyncSession(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<SyncSessionOptions>();
 
@@ -364,16 +364,16 @@ public static class SyncSessionExtensions
     /// to the original data source while Migrated tenants use the SyncSystem DB.
     /// </summary>
     /// <remarks>
-    /// Call this after <c>AddSyncSystem()</c>. The unkeyed <see cref="IServerDatabase"/> must then
+    /// Call this after <c>AddSyncSession()</c>. The unkeyed <see cref="IServerDatabase"/> must then
     /// be replaced with a <c>SyncModeAwareServerDatabase</c> proxy in the consumer's
     /// <c>Program.cs</c> (see DVMApp integration for reference).
     /// <para>
     /// [TODO POST-MIGRATION] Delete this method and all call sites once all tenants are Migrated.
     /// At that point remove the proxy, remove this registration, and the unkeyed
-    /// <see cref="IServerDatabase"/> from <c>AddSyncSystem()</c> is the only one needed.
+    /// <see cref="IServerDatabase"/> from <c>AddSyncSession()</c> is the only one needed.
     /// </para>
     /// </remarks>
-    public static IServiceCollection AddSyncSystemLegacyDatabase(
+    public static IServiceCollection AddSyncSessionLegacyDatabase(
         this IServiceCollection services,
         string connectionString)
     {

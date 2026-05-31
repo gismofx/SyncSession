@@ -19,7 +19,7 @@ public class SyncWebApplicationFactory : WebApplicationFactory<Program>
     /// <param name="requireAuthorization">
     /// When true, registers <see cref="TestAuthHandler"/> as the auth scheme and enables
     /// the SyncAccess policy so that unauthenticated requests receive 401.
-    /// When false (default), the allow-all SyncAccess policy from AddSyncSystem() is used.
+    /// When false (default), the allow-all SyncAccess policy from AddSyncSession() is used.
     /// </param>
     public SyncWebApplicationFactory(string connectionString, bool requireAuthorization = false)
     {

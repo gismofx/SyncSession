@@ -27,7 +27,7 @@ try
     var connectionString = builder.Configuration.GetConnectionString("SyncDatabase")
         ?? throw new InvalidOperationException("SyncDatabase connection string is required.");
 
-    builder.Services.AddSyncSystem(opts =>
+    builder.Services.AddSyncSession(opts =>
     {
         opts.ConnectionString     = connectionString;
         opts.DatabaseProvider     = builder.Configuration.GetValue<string>("DatabaseProvider") ?? "MySQL";
@@ -86,7 +86,7 @@ try
     app.UseAuthorization();
 
     // ── Startup tasks: AutoMigrate + schema validation ────────────────────────
-    await app.UseSyncSystem();
+    await app.UseSyncSession();
 
     // ── Endpoints ─────────────────────────────────────────────────────────────
     app.MapSyncEndpoints();

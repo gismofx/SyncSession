@@ -5,7 +5,7 @@ namespace SyncSession.Server;
 
 /// <summary>
 /// Configuration options for the SyncSystem server library.
-/// Passed to <see cref="Extensions.SyncSessionExtensions.AddSyncSystem"/> to configure
+/// Passed to <see cref="Extensions.SyncSessionExtensions.AddSyncSession"/> to configure
 /// all sync infrastructure including database, services, and background workers.
 /// </summary>
 public class SyncSessionOptions
@@ -32,7 +32,7 @@ public class SyncSessionOptions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// When <c>false</c> (local dev / trusted networks): <see cref="Extensions.SyncSessionExtensions.AddSyncSystem"/>
+    /// When <c>false</c> (local dev / trusted networks): <see cref="Extensions.SyncSessionExtensions.AddSyncSession"/>
     /// registers an allow-all <c>SyncAccess</c> policy automatically — no authentication middleware required.
     /// Set <c>"RequireAuthorization": false</c> in <c>appsettings.Development.json</c>.
     /// </para>
