@@ -1,0 +1,1 @@
+// Replaced by ClientSyncConfigurationValidationTests.cs and ServerSyncConfigurationValidationTests.cs

@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SyncSession.Samples.Desktop.ViewModels"
+             xmlns:shared="using:SyncSession.Samples.Shared.Entities"
+             x:Class="SyncSession.Samples.Desktop.Views.OrdersView"
+             x:DataType="vm:OrdersViewModel">
+
+    <Grid x:Name="MainGrid" RowDefinitions="Auto,*,Auto">
+
+        <!-- ── Row 0: Form ── -->
+        <StackPanel Grid.Row="0" Margin="10" Spacing="6">
+            <TextBlock Text="Order Management" FontSize="13" FontWeight="SemiBold" Foreground="#A6ADC8" />
+            <UniformGrid Columns="2">
+                <StackPanel Margin="0,0,8,4">
+                    <TextBlock Text="Customer ID (GUID)" FontSize="11" Foreground="#A6ADC8" Margin="0,0,0,2" />
+                    <TextBox Text="{Binding EditCustomerId}" Watermark="Paste customer GUID" />
+                </StackPanel>
+                <StackPanel Margin="8,0,0,4">
+                    <TextBlock Text="Order Number" FontSize="11" Foreground="#A6ADC8" Margin="0,0,0,2" />
+                    <TextBox Text="{Binding EditOrderNumber}" Watermark="e.g. ORD-0001" />
+                </StackPanel>
+                <StackPanel Margin="0,0,8,4">
+                    <TextBlock Text="Total Amount" FontSize="11" Foreground="#A6ADC8" Margin="0,0,0,2" />
+                    <NumericUpDown Value="{Binding EditTotalAmount}" FormatString="C2" Minimum="0" />
+                </StackPanel>
+            </UniformGrid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Command="{Binding NewOrderCommand}" Content="New" />
+                <Button Command="{Binding SaveCommand}" Content="Save" Background="#7C3AED" Foreground="White" Padding="16,6" />
+                <Button Command="{Binding CancelEditCommand}" Content="Clear" Padding="12,6" />
+                <Button Command="{Binding MarkAllDirtyCommand}" Content="Mark All Dirty" Background="#B45309" Foreground="White" Padding="12,6" />
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#F44336"
+                           IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- ── Row 1: DataGrid ── -->
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Orders}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  GridLinesVisibility="Horizontal"
+                  VerticalAlignment="Stretch"
+                  HorizontalAlignment="Stretch"
+                  Margin="10,0,10,10">
+
+            <DataGrid.Styles>
+                <Style Selector="DataGridRow" x:DataType="shared:Order">
+                    <Setter Property="Background"
+                            Value="{Binding IsDirty,
+                                   Converter={StaticResource BoolToBackgroundConverter},
+                                   ConverterParameter='#20F59E0B|Transparent'}" />
+                </Style>
+            </DataGrid.Styles>
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="" Width="28" CanUserResize="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="shared:Order">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                     Fill="{Binding IsDirty, Converter={StaticResource BoolToBrushConverter},
+                                            ConverterParameter='#F59E0B|#4CAF50'}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Order #"     Binding="{Binding OrderNumber}" Width="140" />
+                <DataGridTextColumn Header="Customer"    Binding="{Binding CustomerId}"  Width="*" />
+                <DataGridTemplateColumn Header="Total" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="shared:Order">
+                            <TextBlock Text="{Binding TotalAmount, StringFormat=\{0:C\}}"
+                                       VerticalAlignment="Center" Margin="4,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Status"      Binding="{Binding Status}"      Width="100" />
+                <DataGridTemplateColumn Header="Date" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="shared:Order">
+                            <TextBlock Text="{Binding OrderDate, StringFormat=\{0:yyyy-MM-dd\}}"
+                                       VerticalAlignment="Center" Margin="4,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Modified By" Binding="{Binding ModifiedByUserId}" Width="120" />
+                <DataGridTemplateColumn Header="Actions" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="shared:Order">
+                            <Button Content="Delete"
+                                    Command="{Binding $parent[UserControl].((vm:OrdersViewModel)DataContext).DeleteCommand}"
+                                    CommandParameter="{Binding}" Padding="8,4" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- ── Row 2: Summary bar ── -->
+        <Border Grid.Row="2" Background="#181825" Padding="10,6">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Foreground="#6C7086" FontSize="11">
+                    <Run Text="Total: " />
+                    <Run Text="{Binding TotalCount}" Foreground="#CDD6F4" FontWeight="Medium" />
+                </TextBlock>
+                <TextBlock Foreground="#6C7086" FontSize="11">
+                    <Run Text="Pending sync: " />
+                    <Run Text="{Binding DirtyCount}" Foreground="#F59E0B" FontWeight="Medium" />
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</UserControl>

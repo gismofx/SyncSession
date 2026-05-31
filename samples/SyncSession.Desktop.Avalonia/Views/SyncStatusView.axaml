@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SyncSession.Samples.Desktop.ViewModels"
+             x:Class="SyncSession.Samples.Desktop.Views.SyncStatusView"
+             x:DataType="vm:SyncStatusViewModel">
+
+    <Border Background="#1E1E2E" Padding="12,8">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+
+            <!-- Online/offline indicator -->
+            <Ellipse Grid.Column="0" Width="10" Height="10" Margin="0,0,8,0"
+                     Fill="{Binding IsOnline,
+                            Converter={StaticResource BoolToBrushConverter},
+                            ConverterParameter='#4CAF50|#F44336'}" />
+
+            <!-- Last sync timestamp -->
+            <TextBlock Grid.Column="1" Foreground="#A6ADC8" FontSize="11"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding LastSyncedAt,
+                                   Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Text="{Binding LastSyncedAt, StringFormat='Last sync: {0:HH:mm:ss}'}" />
+
+            <!-- Cancel (only while syncing) -->
+            <Button Grid.Column="2" Margin="0,0,8,0" Padding="12,6"
+                    IsVisible="{Binding IsSyncing}"
+                    Command="{Binding CancelSyncCommand}"
+                    Content="Cancel" />
+
+            <!-- Sync All -->
+            <Button Grid.Column="3" Padding="20,6"
+                    Command="{Binding SyncCommand}"
+                    IsEnabled="{Binding !IsOverlayVisible}"
+                    Background="#7C3AED" Foreground="White"
+                    Content="Sync All" />
+        </Grid>
+    </Border>
+</UserControl>

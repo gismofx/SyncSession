@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>SyncSession.Server.Host</RootNamespace>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <UserSecretsId>bf83ece7-d408-4db3-9144-c6c1be2063bd</UserSecretsId>
+    <!-- Host is the deployable — not a NuGet package -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SyncSession.Server/SyncSession.Server.csproj" />
+    <ProjectReference Include="..\..\samples\SyncSession.Samples.Shared\SyncSession.Samples.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.MySQL" Version="5.0.0" />
+  </ItemGroup>
+
+  <!-- SQL migration scripts — needed at runtime in Host's output directory -->
+  <ItemGroup>
+    <None Include="..\SyncSession.Server\Scripts\MySQL\001_Infrastructure.sql" Link="Scripts\MySQL\001_Infrastructure.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\scripts\MySQL\002_ExampleBusinessTables.sql" Link="Scripts\MySQL\002_ExampleBusinessTables.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

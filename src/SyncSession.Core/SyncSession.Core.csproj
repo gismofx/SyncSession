@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8</TargetFramework>
+    <RootNamespace>SyncSession.Core</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>SyncSession.Core</PackageId>
+    <Description>Interfaces, models, and contracts for the SyncSession offline-first sync framework. Required by both SyncSession.Client and SyncSession.Server.</Description>
+    <PackageTags>sync;offline-first;synchronization;database;dotnet</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SyncSession.Client" />
+    <InternalsVisibleTo Include="SyncSession.Server" />
+    <InternalsVisibleTo Include="SyncSession.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>

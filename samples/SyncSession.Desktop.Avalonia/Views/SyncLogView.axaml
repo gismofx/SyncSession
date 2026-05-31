@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SyncSession.Samples.Desktop.ViewModels"
+             x:Class="SyncSession.Samples.Desktop.Views.SyncLogView"
+             x:DataType="vm:SyncLogViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8">
+            <Button Command="{Binding LoadCommand}" Content="Refresh" />
+            <TextBlock Text="Limit:" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding PageSize}" Minimum="1" Maximum="200" Width="80" />
+            <TextBlock Text="(server must be online)" Foreground="#A6ADC8"
+                       FontSize="11" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Offline / error message -->
+        <Border Grid.Row="1" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Background="#311" Padding="8" Margin="8,0">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#F44336" />
+        </Border>
+
+        <!-- Session log list (38l: SyncSessionSummary replaces SyncActivityLog) -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Entries}"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  GridLinesVisibility="Horizontal" Margin="8,4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Type"      Binding="{Binding SessionType}"   Width="60" />
+                <DataGridTextColumn Header="Version"   Binding="{Binding SyncVersion}"   Width="80" />
+                <DataGridTextColumn Header="Device"    Binding="{Binding DeviceId}"      Width="260" />
+                <DataGridTextColumn Header="Tenant"    Binding="{Binding TenantId}"      Width="260" />
+                <DataGridTextColumn Header="Committed" Binding="{Binding CommittedAtUtc, StringFormat=\{0:yyyy-MM-dd HH:mm:ss\}}" Width="160" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

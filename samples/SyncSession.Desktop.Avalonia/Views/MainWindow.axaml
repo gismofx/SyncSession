@@ -1,0 +1,151 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SyncSession.Samples.Desktop.ViewModels"
+        xmlns:views="using:SyncSession.Samples.Desktop.Views"
+        x:Class="SyncSession.Samples.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="SyncSession Desktop Demo"
+        Width="1100" Height="750"
+        MinWidth="800" MinHeight="600">
+
+    <!-- Root grid: tabs fill centre, status bar pinned to bottom -->
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- Tab navigation -->
+        <TabControl Grid.Row="0" SelectedIndex="{Binding SelectedTabIndex}"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch">
+
+            <TabControl.Styles>
+                <!-- Force the internal ContentPresenter to stretch vertically so
+                     * rows inside tab content can fill available height -->
+                <Style Selector="TabControl /template/ ContentPresenter#PART_SelectedContentHost">
+                    <Setter Property="VerticalAlignment" Value="Stretch" />
+                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                </Style>
+            </TabControl.Styles>
+            <TabItem Header="Customers">
+                <views:CustomersView DataContext="{Binding Customers}" />
+            </TabItem>
+            <TabItem Header="Products">
+                <views:ProductsView DataContext="{Binding Products}" />
+            </TabItem>
+            <TabItem Header="Orders">
+                <views:OrdersView DataContext="{Binding Orders}" />
+            </TabItem>
+            <TabItem Header="Sync Log">
+                <views:SyncLogView DataContext="{Binding SyncLog}" />
+            </TabItem>
+        </TabControl>
+
+        <!-- Status bar -->
+        <views:SyncStatusView Grid.Row="1"
+                              DataContext="{Binding SyncStatus}" />
+
+        <!-- ═══════════════════════════════════════════════════════
+             Full-window overlay — spans both rows, ZIndex on top.
+             DataContext stays as MainWindowViewModel; all bindings
+             prefix with SyncStatus. to reach SyncStatusViewModel.
+             ═══════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="0" Grid.RowSpan="2"
+              ZIndex="100"
+              IsVisible="{Binding SyncStatus.IsOverlayVisible}">
+
+            <!-- Dim background -->
+            <Border Background="#80000000"
+                    IsEnabled="False" />
+
+            <!-- Sync card — centred -->
+            <Border Background="#1E1E2E"
+                    CornerRadius="12"
+                    Padding="32"
+                    Width="440"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 0 #60000000">
+
+                <StackPanel Spacing="20">
+
+                    <!-- ── SYNCING STATE ── -->
+                    <StackPanel IsVisible="{Binding SyncStatus.IsSyncing}" Spacing="14">
+
+                        <TextBlock Text="Syncing…"
+                                   FontSize="18" FontWeight="SemiBold"
+                                   Foreground="#CDD6F4"
+                                   HorizontalAlignment="Center" />
+
+                        <!-- Current table label -->
+                        <TextBlock Text="{Binding SyncStatus.TableLabel}"
+                                   Foreground="#CDD6F4" FontSize="13" FontWeight="Medium"
+                                   IsVisible="{Binding SyncStatus.CurrentTable,
+                                               Converter={x:Static ObjectConverters.IsNotNull}}"
+                                   HorizontalAlignment="Center" />
+
+                        <!-- Per-table progress -->
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Current table" Foreground="#6C7086" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding SyncStatus.TableRecordsLabel}"
+                                           Foreground="#A6ADC8" FontSize="11" />
+                            </Grid>
+                            <ProgressBar Value="{Binding SyncStatus.TableProgressPercent}"
+                                         Maximum="100" Height="8" CornerRadius="4" />
+                        </StackPanel>
+
+                        <!-- Overall progress -->
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="Overall" Foreground="#6C7086" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding SyncStatus.OverallLabel}"
+                                           Foreground="#A6ADC8" FontSize="11" />
+                            </Grid>
+                            <ProgressBar Value="{Binding SyncStatus.OverallProgressPercent}"
+                                         Maximum="100" Height="8" CornerRadius="4" />
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding SyncStatus.StatusMessage}"
+                                   Foreground="#A6ADC8" FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   TextWrapping="Wrap" />
+
+                        <Button Content="Cancel"
+                                Command="{Binding SyncStatus.CancelSyncCommand}"
+                                HorizontalAlignment="Center"
+                                Padding="24,6" />
+                    </StackPanel>
+
+                    <!-- ── OUTCOME STATE ── -->
+                    <StackPanel IsVisible="{Binding SyncStatus.IsSyncComplete}" Spacing="16"
+                                HorizontalAlignment="Center">
+
+                        <!-- Success icon -->
+                        <TextBlock IsVisible="{Binding SyncStatus.IsSyncSuccess}"
+                                   Text="✓"
+                                   FontSize="48" Foreground="#4CAF50"
+                                   HorizontalAlignment="Center" />
+
+                        <!-- Error icon -->
+                        <TextBlock IsVisible="{Binding SyncStatus.IsSyncError}"
+                                   Text="✕"
+                                   FontSize="48" Foreground="#F44336"
+                                   HorizontalAlignment="Center" />
+
+                        <TextBlock Text="{Binding SyncStatus.SyncOutcomeMessage}"
+                                   FontSize="14" Foreground="#CDD6F4"
+                                   HorizontalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center" />
+
+                        <Button Content="OK"
+                                Command="{Binding SyncStatus.DismissCommand}"
+                                HorizontalAlignment="Center"
+                                Padding="40,8"
+                                Background="#7C3AED" Foreground="White" />
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+        </Grid>
+
+    </Grid>
+</Window>

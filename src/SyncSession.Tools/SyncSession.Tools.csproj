@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>SyncSession.Tools</RootNamespace>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- dotnet tool packaging -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>syncsystem-tools</ToolCommandName>
+    <IsPackable>true</IsPackable>
+    <PackageId>SyncSession.Tools</PackageId>
+    <Description>CLI tools for migrating existing MySQL/MariaDB databases to SyncSystem. Provides assess, clone, migrate, and validate commands.</Description>
+    <PackageTags>sync;offline-first;synchronization;migration;dotnet;tools</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SyncSession.Core\SyncSession.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector" Version="2.3.7" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

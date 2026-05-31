@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8</TargetFramework>
+    <RootNamespace>SyncSession.Client</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>SyncSession.Client</PackageId>
+    <Description>.NET Standard 2.1 client library for offline-first sync with a SyncSystem server. Provides push/pull synchronization, session tracking, and SQLite local storage.</Description>
+    <PackageTags>sync;offline-first;synchronization;client;sqlite;dotnet</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SyncSession.UnitTests" />
+    <InternalsVisibleTo Include="SyncSession.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SyncSession.Core/SyncSession.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+</Project>

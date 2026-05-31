@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>SyncSession.Benchmarks</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="Testcontainers.MySql" Version="4.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/SyncSession.Core/SyncSession.Core.csproj" />
+    <ProjectReference Include="../../src/SyncSession.Server/SyncSession.Server.csproj" />
+    <ProjectReference Include="../../src/SyncSession.Client/SyncSession.Client.csproj" />
+    <ProjectReference Include="../../samples/SyncSession.Samples.Shared/SyncSession.Samples.Shared.csproj" />
+  </ItemGroup>
+</Project>
