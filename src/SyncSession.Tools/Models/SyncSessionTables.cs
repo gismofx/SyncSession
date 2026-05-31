@@ -1,7 +1,7 @@
 namespace SyncSession.Tools.Models;
 
 /// <summary>
-/// SyncSystem infrastructure table names that should be excluded from
+/// SyncSession infrastructure table names that should be excluded from
 /// migration assessment results — they are not consumer business tables.
 /// </summary>
 public static class SyncSessionTables

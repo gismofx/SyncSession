@@ -94,7 +94,7 @@ public class ServerHealthCheck
         OutputHelper.WriteError($"Server not running at {_serverUrl}");
         OutputHelper.WriteBlankLine();
         OutputHelper.WriteInfo("To start the server:");
-        System.Console.WriteLine("  cd src/SyncSystem.Server");
+        System.Console.WriteLine("  cd src/SyncSession.Server");
         System.Console.WriteLine("  dotnet run");
         OutputHelper.WriteBlankLine();
         OutputHelper.WriteInfo("Or use a different server:");

@@ -11,11 +11,11 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
     <Authors>Chad Pottier</Authors>
-    <Company>SyncSystem</Company>
-    <Product>SyncSystem</Product>
-    <Copyright>Copyright © 2026 Chad Pottier</Copyright>
-    <PackageProjectUrl>https://github.com/chadpottier/SyncSystem</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/chadpottier/SyncSystem</RepositoryUrl>
+    <Company>SyncSession</Company>
+    <Product>SyncSession</Product>
+    <Copyright>Copyright © 2026 SyncSession Contributors</Copyright>
+    <PackageProjectUrl>https://github.com/gismofx/SyncSession</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gismofx/SyncSession</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
