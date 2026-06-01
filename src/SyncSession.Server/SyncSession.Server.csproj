@@ -9,7 +9,7 @@
     <!-- NuGet package metadata -->
     <IsPackable>true</IsPackable>
     <PackageId>SyncSession.Server</PackageId>
-    <Description>ASP.NET Core integration package for hosting a SyncSystem sync server. Provides AddSyncSystem / UseSyncSystem / MapSyncEndpoints extension methods for embedding offline-first sync infrastructure into any ASP.NET Core application.</Description>
+    <Description>ASP.NET Core integration package for hosting a SyncSession sync server. Provides AddSyncSystem / UseSyncSystem / MapSyncEndpoints extension methods for embedding offline-first sync infrastructure into any ASP.NET Core application.</Description>
     <PackageTags>sync;offline-first;synchronization;aspnetcore;database;dotnet;server</PackageTags>
   </PropertyGroup>
 

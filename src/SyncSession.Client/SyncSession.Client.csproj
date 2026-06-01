@@ -4,7 +4,7 @@
     <RootNamespace>SyncSession.Client</RootNamespace>
     <IsPackable>true</IsPackable>
     <PackageId>SyncSession.Client</PackageId>
-    <Description>.NET Standard 2.1 client library for offline-first sync with a SyncSystem server. Provides push/pull synchronization, session tracking, and SQLite local storage.</Description>
+    <Description>.NET Standard 2.1 client library for offline-first sync with a SyncSession server. Provides push/pull synchronization, session tracking, and SQLite local storage.</Description>
     <PackageTags>sync;offline-first;synchronization;client;sqlite;dotnet</PackageTags>
   </PropertyGroup>
 
