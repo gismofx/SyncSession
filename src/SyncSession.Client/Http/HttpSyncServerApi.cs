@@ -100,7 +100,7 @@ public class HttpSyncServerApi : ISyncServerApi
         };
 
         var response = await PostWithProtocolHeadersAsync(
-            $"{_baseUrl}/api/v1/sync/push/begin", request);
+            $"{_baseUrl}/v1/sync/push/begin", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PushSessionBeginResponse>()
@@ -130,7 +130,7 @@ public class HttpSyncServerApi : ISyncServerApi
             Records = recordList
         };
 
-        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/v1/sync/push/batch", request);
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/v1/sync/push/batch", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PushBatchResponse>()
@@ -151,7 +151,7 @@ public class HttpSyncServerApi : ISyncServerApi
             TotalRecordsSent = totalRecordsSent
         };
 
-        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/v1/sync/push/table-complete", request);
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/v1/sync/push/table-complete", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PushTableCompleteResponse>()
@@ -172,7 +172,7 @@ public class HttpSyncServerApi : ISyncServerApi
     {
         var request = new PushSessionCompleteRequest { SessionId = sessionId };
 
-        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/v1/sync/push/complete", request);
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/v1/sync/push/complete", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PushSessionCompleteResponse>()
@@ -186,7 +186,7 @@ public class HttpSyncServerApi : ISyncServerApi
     /// <inheritdoc/>
     public async Task<PushSessionStatusResponse> GetPushStatusAsync(Guid sessionId)
     {
-        var response = await _httpClient.GetAsync($"{_baseUrl}/api/v1/sync/push/status/{sessionId}");
+        var response = await _httpClient.GetAsync($"{_baseUrl}/v1/sync/push/status/{sessionId}");
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<PushSessionStatusResponse>()
@@ -210,7 +210,7 @@ public class HttpSyncServerApi : ISyncServerApi
         };
 
         var response = await PostWithProtocolHeadersAsync(
-            $"{_baseUrl}/api/v1/sync/pull/begin", request);
+            $"{_baseUrl}/v1/sync/pull/begin", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PullSessionBeginResponse>()
@@ -237,7 +237,7 @@ public class HttpSyncServerApi : ISyncServerApi
             Limit = limit
         };
 
-        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/v1/sync/pull/batch", request);
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/v1/sync/pull/batch", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PullBatchResponse>()
@@ -264,7 +264,7 @@ public class HttpSyncServerApi : ISyncServerApi
             ProcessedSessionIds = processedSessionIds
         };
 
-        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/v1/sync/pull/complete", request);
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/v1/sync/pull/complete", request);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PullSessionCompleteResponse>()

@@ -16,7 +16,7 @@ namespace SyncSession.Client.Http;
 
 /// <summary>
 /// HTTP-based implementation of <see cref="ISeedServerApi"/>.
-/// Consumes the NDJSON stream from <c>GET /api/v1/sync/seed/{tenantId}</c>.
+/// Consumes the NDJSON stream from <c>GET /v1/sync/seed/{tenantId}</c>.
 /// </summary>
 public sealed class HttpSeedServerApi : ISeedServerApi
 {
@@ -38,7 +38,7 @@ public sealed class HttpSeedServerApi : ISeedServerApi
         Guid deviceId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var url = $"{_baseUrl}/api/v1/sync/seed/{tenantId}?deviceId={deviceId}";
+        var url = $"{_baseUrl}/v1/sync/seed/{tenantId}?deviceId={deviceId}";
         _logger.LogDebug("Opening seed stream: {Url}", url);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -92,7 +92,7 @@ public sealed class HttpSeedServerApi : ISeedServerApi
     /// <inheritdoc/>
     public async Task AcknowledgeSeedAsync(SeedAcknowledgeRequest request, CancellationToken ct = default)
     {
-        var url = $"{_baseUrl}/api/v1/sync/seed/acknowledge";
+        var url = $"{_baseUrl}/v1/sync/seed/acknowledge";
         var body = JsonSerializer.Serialize(request);
         using var content = new StringContent(body, Encoding.UTF8, "application/json");
 

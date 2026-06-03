@@ -77,7 +77,7 @@ public class App : Application
         var deviceId  = Guid.Parse(config["Client:DeviceId"]!);
         var tenantId  = Guid.TryParse(config["Client:TenantId"], out var tid) ? tid : (Guid?)null;
         var userId    = config["Client:UserId"] ?? "DemoUser";
-        var serverUrl = config["SyncServer:BaseUrl"] ?? "http://localhost:5000";
+        var serverUrl = config["SyncServer:BaseUrl"] ?? "http://localhost:5000/api";
         var dbPath    = config["ClientDatabase:FilePath"] ?? "desktop-client.db";
 
         var syncConfig = new ClientSyncConfiguration

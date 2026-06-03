@@ -525,7 +525,7 @@ public class SeedIntegrationTests : IAsyncLifetime
 
         // Real HTTP seed stream + a writer that throws on first write.
         var serverApi = new HttpSeedServerApi(
-            client, string.Empty, NullLogger<HttpSeedServerApi>.Instance);
+            client, "/api", NullLogger<HttpSeedServerApi>.Instance);
         var seedClient = new SeedClient(
             serverApi, NullLogger<SeedClient>.Instance);
 
@@ -547,6 +547,79 @@ public class SeedIntegrationTests : IAsyncLifetime
         row.Status.Should().Be("Failed", "a failed local write must persist a Failed seed session");
         row.ErrorMessage.Should().NotBeNullOrEmpty("the failure reason must be recorded");
         row.ErrorMessage.Should().Contain(dbError.Message);
+    }
+
+    // ── Bug demonstration: non-raw writer silently skips 'rows' bundles ─────────
+
+    /// <summary>
+    /// Demonstrates the silent data-loss bug: a writer implementing only
+    /// <see cref="ISeedDatabaseWriter"/> (not <see cref="IRawSeedDatabaseWriter"/>)
+    /// receives zero rows when the server emits 'rows' bundle lines, because
+    /// SeedClient's case "rows": has no non-raw fallback. SeedAsync completes
+    /// without error and reports success — no rows written.
+    ///
+    /// Fix options:
+    ///   (a) Expand 'rows' bundles into the non-raw batch path when rawWriter == null.
+    ///   (b) Throw loudly when a 'rows' line arrives at a non-raw writer.
+    ///
+    /// Note: ThrowingSeedWriter (38B-f test) already had to implement
+    /// IRawSeedDatabaseWriter to receive any data — its comment ("since the seed
+    /// stream uses 'rows' bundles") is the same bug, worked around silently.
+    /// </summary>
+    [Fact]
+    public async Task SeedClient_NonRawWriter_SilentlyReceivesZeroRows_WhenServerEmitsRowsBundles()
+    {
+        var tenantId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        var (factory, client) = CreateClient();
+        using var _ = factory;
+        using var __ = client;
+
+        const int serverCount = 3;
+        await SeedCustomerAsync(factory, tenantId, serverCount);
+
+        var serverApi = new HttpSeedServerApi(
+            client, "/api", NullLogger<HttpSeedServerApi>.Instance);
+        var seedClient = new SeedClient(serverApi, NullLogger<SeedClient>.Instance);
+
+        var writer = new NonRawSeedWriter();
+
+        // SeedAsync reports success — no exception, no warning.
+        await seedClient.SeedAsync(tenantId, deviceId, writer);
+
+        // This assertion FAILS — proving the bug.
+        // Server emitted 'rows' bundles; WriteRowsAsync was never called;
+        // writer.RowsWritten == 0 despite serverCount records existing on the server.
+        writer.RowsWritten.Should().Be(serverCount,
+            "a non-raw ISeedDatabaseWriter must receive all rows even when the server " +
+            "emits 'rows' bundle lines; currently SeedClient silently skips them");
+    }
+
+    /// <summary>
+    /// Minimal ISeedDatabaseWriter that counts rows via the non-raw path only.
+    /// Deliberately does NOT implement IRawSeedDatabaseWriter — that is the point.
+    /// When the bug is present, WriteRowsAsync is never called for 'rows' bundles
+    /// and RowsWritten stays zero despite the server having data.
+    /// </summary>
+    private sealed class NonRawSeedWriter : ISeedDatabaseWriter
+    {
+        public int RowsWritten { get; private set; }
+
+        public Task BeginTableAsync(string tableName, int totalRows, CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public Task WriteRowsAsync(string tableName,
+            IReadOnlyList<Dictionary<string, object?>> rows, CancellationToken ct = default)
+        {
+            RowsWritten += rows.Count;
+            return Task.CompletedTask;
+        }
+
+        public Task EndTableAsync(string tableName, CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public Task CommitAsync(CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 
     /// <summary>ISeedDatabaseWriter stub that throws on the first row write — simulates a local DB insert failure.

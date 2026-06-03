@@ -23,7 +23,7 @@ namespace SyncSession.UnitTests.Client;
 /// </summary>
 public class HttpSyncServerApiProtocolTests
 {
-    private const string BaseUrl = "https://sync.example.com";
+    private const string BaseUrl = "https://sync.example.com/api";
 
     private static readonly Guid DeviceId = Guid.NewGuid();
 

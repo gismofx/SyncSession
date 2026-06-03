@@ -223,7 +223,7 @@ class Program
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
 
-            options.ServerUrl = config["SyncServer:BaseUrl"] ?? "https://localhost:5001";
+            options.ServerUrl = config["SyncServer:BaseUrl"] ?? "https://localhost:5001/api";
         }
 
         // Auto-enable verbose mode when running under debugger
@@ -401,6 +401,6 @@ public class ProgramOptions
     public bool PersistDatabases { get; set; }
     public int RecordCount { get; set; } = 10;
     public int BatchSize { get; set; } = 1000;
-    public string ServerUrl { get; set; } = "https://localhost:5001";
+    public string ServerUrl { get; set; } = "https://localhost:5001/api";
     public bool Verbose { get; set; }
 }
