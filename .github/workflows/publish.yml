@@ -1,0 +1,68 @@
+name: Publish NuGet Packages
+
+on:
+  release:
+    types: [published]   # Trigger from GitHub web UI: Releases → Draft new release → Publish
+  workflow_dispatch:     # Also triggerable manually from Actions tab
+    inputs:
+      version:
+        description: 'Package version (e.g. 1.0.0-rc.1)'
+        required: true
+        default: '1.0.0-rc.1'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # Required for NuGet trusted publishing OIDC
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history required for SourceLink
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Restore
+        run: dotnet restore SyncSession.sln
+
+      - name: Build
+        run: dotnet build SyncSession.sln -c Release --no-restore -p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Unit tests
+        run: dotnet test tests/SyncSession.UnitTests/SyncSession.UnitTests.csproj -c Release --no-build --verbosity normal
+
+      - name: Integration tests
+        run: dotnet test tests/SyncSession.IntegrationTests/SyncSession.IntegrationTests.csproj -c Release --no-build --verbosity normal
+
+      - name: Pack
+        run: dotnet pack SyncSession.sln -c Release --no-build -p:PackageVersion=${{ steps.version.outputs.VERSION }} --output ./nupkgs
+
+      - name: NuGet login (OIDC → temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: gismofx
+
+      - name: Push to NuGet.org
+        run: |
+          dotnet nuget push "./nupkgs/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
+          dotnet nuget push "./nupkgs/*.snupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate

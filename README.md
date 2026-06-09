@@ -1,7 +1,13 @@
 # SyncSession
 
-[![NuGet](https://img.shields.io/nuget/v/SyncSession.Server.svg)](https://www.nuget.org/packages/SyncSession.Server)
+[![Tests](https://github.com/gismofx/SyncSession/actions/workflows/test.yml/badge.svg)](https://github.com/gismofx/SyncSession/actions/workflows/test.yml)
+[![NuGet: Core](https://img.shields.io/nuget/v/SyncSession.Core?label=Core)](https://www.nuget.org/packages/SyncSession.Core)
+[![NuGet: Client](https://img.shields.io/nuget/v/SyncSession.Client?label=Client)](https://www.nuget.org/packages/SyncSession.Client)
+[![NuGet: Server](https://img.shields.io/nuget/v/SyncSession.Server?label=Server)](https://www.nuget.org/packages/SyncSession.Server)
+[![Downloads](https://img.shields.io/nuget/dt/SyncSession.Client?label=downloads)](https://www.nuget.org/packages/SyncSession.Client)
+[![GitHub Stars](https://img.shields.io/github/stars/gismofx/SyncSession?style=social)](https://github.com/gismofx/SyncSession)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4?logo=dotnet)](https://dotnet.microsoft.com)
 
 **Production-ready, offline-first synchronization library for .NET applications.**
 
@@ -41,7 +47,7 @@ Traditional version-based sync misses records during concurrent operations:
 # Server (ASP.NET Core)
 dotnet add package SyncSession.Server
 
-# Client (.NET Standard 2.1+)
+# Client (.NET 8.0+ / .NET 10.0+)
 dotnet add package SyncSession.Client
 ```
 

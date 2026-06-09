@@ -34,4 +34,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
+
+  <!-- Include README in all NuGet packages (PackageReadmeFile declared above) -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,36 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:     # Also triggerable manually from Actions tab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      - name: Restore
+        run: dotnet restore SyncSession.sln
+
+      - name: Build
+        run: dotnet build SyncSession.sln -c Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test tests/SyncSession.UnitTests/SyncSession.UnitTests.csproj -c Release --no-build --logger "console;verbosity=minimal"
+
+      - name: Integration tests
+        run: dotnet test tests/SyncSession.IntegrationTests/SyncSession.IntegrationTests.csproj -c Release --no-build --logger "console;verbosity=minimal"
