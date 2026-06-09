@@ -253,7 +253,7 @@ internal class SessionTracker : ISessionTracker
             tableInfo.Value.UsesSharedTable);
 
         // Update SyncSessionTables status
-        await _database.UpdateSessionTableStatusAsync(sessionId, tableName, actualCount, "Ready");
+        await _database.UpdateSessionTableStatusAsync(sessionId, tableName, actualCount, SyncConstants.STATUS_READY);
 
         var matches = actualCount == totalRecordsSent;
 

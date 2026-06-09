@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8</TargetFramework>
     <RootNamespace>SyncSession.Samples.Shared</RootNamespace>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

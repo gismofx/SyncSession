@@ -25,6 +25,10 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
         SqlMapper.AddTypeHandler(new SqliteNullableGuidTypeHandler());
     }
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="SqliteClientDatabase"/> with an open SQLite connection.
+    /// </summary>
+    /// <param name="connection">Open SQLite connection to use for all database operations.</param>
     public SqliteClientDatabase(SqliteConnection connection)
     {
         _connection = connection ?? throw new ArgumentNullException(nameof(connection));
@@ -214,6 +218,7 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
 
     private bool _disposed;
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (_disposed) return;

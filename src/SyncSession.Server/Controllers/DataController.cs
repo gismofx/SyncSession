@@ -8,6 +8,7 @@ using SyncSession.Core.Interfaces;
 using SyncSession.Core.Models;
 using SyncSession.Core.Utilities;
 using SyncSession.Server.Filters;
+using SyncSession.Server.Services;
 
 namespace SyncSession.Server.Controllers;
 
@@ -25,6 +26,7 @@ public class DataController : ControllerBase
     private readonly IServerDatabase _database;
     private readonly IDirectWriteService _writeService;
     private readonly ITableMetadataCache _metadataCache;
+    private readonly ISyncGate _syncGate;
     private readonly ILogger<DataController> _logger;
     private readonly IWebHostEnvironment _environment;
 
@@ -32,12 +34,14 @@ public class DataController : ControllerBase
         IServerDatabase database,
         IDirectWriteService writeService,
         ITableMetadataCache metadataCache,
+        ISyncGate syncGate,
         ILogger<DataController> logger,
         IWebHostEnvironment environment)
     {
         _database = database;
         _writeService = writeService;
         _metadataCache = metadataCache;
+        _syncGate = syncGate;
         _logger = logger;
         _environment = environment;
     }
@@ -122,6 +126,12 @@ public class DataController : ControllerBase
     {
         try
         {
+            if (_syncGate.IsGated)
+            {
+                Response.Headers["Retry-After"] = "60";
+                return StatusCode(503, new { error = "Server is in maintenance mode. Retry after 60 seconds." });
+            }
+
             var userId = GetUserId();
 
             if (!body.TryGetProperty("records", out var recordsElement) || recordsElement.ValueKind != JsonValueKind.Object)
@@ -155,6 +165,12 @@ public class DataController : ControllerBase
     {
         try
         {
+            if (_syncGate.IsGated)
+            {
+                Response.Headers["Retry-After"] = "60";
+                return StatusCode(503, new { error = "Server is in maintenance mode. Retry after 60 seconds." });
+            }
+
             if (!ValidateTable(table, out var errorResult))
                 return errorResult!;
 
@@ -198,6 +214,12 @@ public class DataController : ControllerBase
     {
         try
         {
+            if (_syncGate.IsGated)
+            {
+                Response.Headers["Retry-After"] = "60";
+                return StatusCode(503, new { error = "Server is in maintenance mode. Retry after 60 seconds." });
+            }
+
             if (!ValidateTable(table, out var errorResult))
                 return errorResult!;
 

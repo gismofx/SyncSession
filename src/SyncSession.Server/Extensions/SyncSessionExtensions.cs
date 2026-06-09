@@ -42,6 +42,9 @@ public static class SyncSessionExtensions
     /// <summary>
     /// Registers all SyncSystem services using a pre-built <see cref="SyncSessionOptions"/> instance.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="options">Pre-configured options instance.</param>
+    /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
     public static IServiceCollection AddSyncSession(
         this IServiceCollection services,
         SyncSessionOptions options)
@@ -86,6 +89,9 @@ public static class SyncSessionExtensions
 
         // Activity logging removed in 38l — audit data now on SyncSessions directly
 
+        // Sync gate — maintenance mode (Session 37k)
+        services.AddSingleton<ISyncGate, SyncGateService>();
+
         // Data endpoint gating filter (Session 28b)
         services.AddScoped<DataEndpointsEnabledFilter>();
 
@@ -116,20 +122,25 @@ public static class SyncSessionExtensions
                 Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Queue running"));
 
         // ── Authorization ─────────────────────────────────────────────────────
-        // When RequireAuthorization = false (e.g. local dev), register an allow-all
-        // "SyncAccess" policy so [Authorize(Policy = "SyncAccess")] on SyncController
-        // passes without any auth middleware. When true, the policy is NOT registered
-        // here — the consumer must configure their auth scheme and define "SyncAccess"
-        // (e.g. AddAuthentication().AddJwtBearer() + AddAuthorization(o => o.AddPolicy(...))).
+        // When RequireAuthorization = false (e.g. local dev), register allow-all policies
+        // for both "SyncAccess" and "SyncAdminAccess" so decorated controllers pass without
+        // any auth middleware. When true, neither policy is registered here — the consumer
+        // must configure their auth scheme and define both policies:
+        //   "SyncAccess"      — any authenticated user (sync clients)
+        //   "SyncAdminAccess" — restricted to admin users (maintenance endpoints)
+        //   e.g. o.AddPolicy("SyncAdminAccess", p => p.RequireClaim("SyncAdmin", "true"))
         if (!options.RequireAuthorization)
         {
             services.AddAuthorization(o =>
-                o.AddPolicy("SyncAccess", p => p.RequireAssertion(_ => true)));
+            {
+                o.AddPolicy("SyncAccess",      p => p.RequireAssertion(_ => true));
+                o.AddPolicy("SyncAdminAccess", p => p.RequireAssertion(_ => true));
+            });
         }
         else
         {
             // Ensure the authorization middleware is registered even when the consumer
-            // owns the policy — avoids "No authN scheme" exceptions at startup.
+            // owns both policies — avoids "No authN scheme" exceptions at startup.
             services.AddAuthorization();
         }
 
@@ -252,6 +263,8 @@ public static class SyncSessionExtensions
     /// Maps all SyncSystem endpoints: sync API controllers, health checks, and API info root.
     /// Call on <see cref="WebApplication"/> after <c>Build()</c>.
     /// </summary>
+    /// <param name="app">The built <see cref="WebApplication"/>.</param>
+    /// <returns>The same <see cref="WebApplication"/> for chaining.</returns>
     public static WebApplication MapSyncEndpoints(this WebApplication app)
     {
         app.MapControllers();

@@ -24,6 +24,8 @@ public interface ISyncServerApi
     /// Begins a push session to upload local changes to the server.
     /// </summary>
     /// <param name="tables">List of tables to sync with estimated record counts.</param>
+    /// <param name="tenantId">Optional tenant ID for multi-tenant deployments.</param>
+    /// <param name="userDisplayName">Optional display name of the initiating user for audit purposes.</param>
     /// <returns>Session ID for the push operation.</returns>
     /// <remarks>
     /// This initiates a push session on the server.
@@ -45,15 +47,6 @@ public interface ISyncServerApi
     /// </remarks>
     Task PushBatchAsync<T>(Guid sessionId, IEnumerable<T> records) where T : ISyncEntity;
     
-    /// <summary>
-    /// Completes a push session and queues it for server-side processing.
-    /// </summary>
-    /// <param name="sessionId">Session ID to complete.</param>
-    /// <remarks>
-    /// Marks the push session as ready for background processing.
-    /// Server will asynchronously process staged records and assign a sync version.
-    /// Client should poll for completion or wait before starting a pull.
-    /// </remarks>
     /// <summary>
     /// Marks a table as fully uploaded and verifies the record count against what the server received.
     /// </summary>
@@ -102,6 +95,8 @@ public interface ISyncServerApi
     /// Begins a pull session to download server changes.
     /// </summary>
     /// <param name="tableNames">List of table names to pull.</param>
+    /// <param name="tenantId">Optional tenant ID for multi-tenant deployments.</param>
+    /// <param name="userDisplayName">Optional display name of the initiating user for audit purposes.</param>
     /// <returns>Pull session begin response with table metadata and record counts.</returns>
     /// <remarks>
     /// Server identifies which sessions this client hasn't processed yet.

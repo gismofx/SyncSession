@@ -22,6 +22,10 @@ public class SyncProtocolException : SyncException
     /// <summary>The current protocol version the server speaks.</summary>
     public int ServerCurrentVersion { get; }
 
+    /// <inheritdoc cref="SyncException(string)"/>
+    /// <param name="clientVersion">Protocol version the client sent.</param>
+    /// <param name="serverMinVersion">Minimum protocol version the server accepts.</param>
+    /// <param name="serverCurrentVersion">Current protocol version the server speaks.</param>
     public SyncProtocolException(int clientVersion, int serverMinVersion, int serverCurrentVersion)
         : base(BuildMessage(clientVersion, serverMinVersion, serverCurrentVersion))
     {
@@ -30,10 +34,12 @@ public class SyncProtocolException : SyncException
         ServerCurrentVersion = serverCurrentVersion;
     }
 
+    /// <inheritdoc cref="SyncException(string)"/>
     public SyncProtocolException(string message) : base(message)
     {
     }
 
+    /// <inheritdoc cref="SyncException(string, Exception)"/>
     public SyncProtocolException(string message, Exception innerException)
         : base(message, innerException)
     {

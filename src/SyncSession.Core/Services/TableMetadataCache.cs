@@ -15,6 +15,11 @@ public class TableMetadataCache : ITableMetadataCache
 {
     private readonly Dictionary<string, CachedTableMetadata> _cache;
 
+    /// <summary>
+    /// Initializes the cache by scanning all registered tables in <paramref name="config"/>
+    /// and pre-computing every column list via one-time reflection.
+    /// </summary>
+    /// <param name="config">Sync configuration with registered entity types.</param>
     public TableMetadataCache(SyncConfiguration config)
     {
         if (config == null)

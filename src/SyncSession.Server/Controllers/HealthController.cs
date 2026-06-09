@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SyncSession.Core.Interfaces;
+using SyncSession.Server.Services;
 using Dapper;
 
 namespace SyncSession.Server.Controllers;
@@ -13,13 +14,16 @@ namespace SyncSession.Server.Controllers;
 public class HealthController : ControllerBase
 {
     private readonly IServerDatabase _database;
+    private readonly ISyncGate _syncGate;
     private readonly ILogger<HealthController> _logger;
 
     public HealthController(
         IServerDatabase database,
+        ISyncGate syncGate,
         ILogger<HealthController> logger)
     {
         _database = database;
+        _syncGate = syncGate;
         _logger = logger;
     }
 
@@ -35,7 +39,8 @@ public class HealthController : ControllerBase
         {
             status = "healthy",
             timestamp = DateTime.UtcNow,
-            version = "v1"
+            version = "v1",
+            maintenanceEnabled = _syncGate.IsGated
         });
     }
 

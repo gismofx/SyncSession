@@ -46,8 +46,6 @@ public interface IServerDatabase
     
     #region Session Tracking
     
-    //Task<List<SessionRecord>> GetUnseenSessionsAsync(Guid clientId, long afterVersion);
-    
     /// <summary>
     /// Finds session IDs that a specific device has not yet processed.
     /// </summary>
@@ -124,6 +122,7 @@ public interface IServerDatabase
     /// </summary>
     /// <typeparam name="T">Entity type implementing ISyncEntity.</typeparam>
     /// <param name="sessionIds">Session IDs to retrieve records from.</param>
+    /// <param name="tenantId">Optional tenant filter; applied when entity implements <see cref="IMultiTenantSyncEntity"/>.</param>
     /// <returns>Records associated with the specified sessions.</returns>
     /// <remarks>
     /// Table name extracted from [SyncTable] attribute.
@@ -133,7 +132,7 @@ public interface IServerDatabase
     Task<IEnumerable<T>> GetRecordsFromSessionsAsync<T>(IEnumerable<Guid> sessionIds, Guid? tenantId = null) where T : ISyncEntity;
     
     #endregion
-    
+
     #region Session Management
     
     /// <summary>
@@ -292,6 +291,7 @@ public interface IServerDatabase
     /// <param name="tempTableName">Temp table name where data is staged.</param>
     /// <param name="priority">Processing priority (lower = earlier).</param>
     /// <param name="usesSharedTable">True if using shared table, false for dedicated.</param>
+    /// <param name="estimatedRecordCount">Estimated number of records for this table (used for strategy decisions and monitoring).</param>
     /// <remarks>
     /// Initial Status is set to 'Staging'.
     /// Called during push session creation for each table.
@@ -602,6 +602,8 @@ public interface IServerDatabase
     /// <param name="transaction">Optional transaction. If null, creates new connection (non-transactional).</param>
     /// <param name="syncVersion">Optional sync version to stamp on the session when committing.</param>
     /// <param name="errorMessage">Optional error message (for Failed status).</param>
+    /// <param name="totalRows">Optional total row count across all tables processed in the session.</param>
+    /// <param name="rowCountsJson">Optional JSON string recording per-table row counts for monitoring.</param>
     /// <remarks>
     /// Updates Status, LastActivityUtc always.
     /// Sets CommittedAtUtc when status is 'Committed'.
@@ -671,7 +673,7 @@ public interface IServerDatabase
     /// to correct schema drift after entity table changes.
     /// </summary>
     /// <remarks>
-    /// Called by <c>UseSyncSystem()</c> on startup after <c>AutoMigrate</c> and before schema
+    /// Called by <c>UseSyncSession()</c> on startup after <c>AutoMigrate</c> and before schema
     /// validation. Prevents "table doesn't exist" errors on first push/pull for a fresh deployment,
     /// and keeps temp tables in sync when entity columns are added or changed.
     /// <para>
@@ -743,7 +745,7 @@ public interface IServerDatabase
     /// Updates the <c>Status</c> column of an existing seed snapshot.
     /// </summary>
     /// <param name="seedId">Seed operation to update.</param>
-    /// <param name="status">New status value (use <see cref="SyncSystem.Core.Models.SeedSnapshotStatus"/> constants).</param>
+    /// <param name="status">New status value (use <see cref="SyncSession.Core.Models.SeedSnapshotStatus"/> constants).</param>
     Task UpdateSeedSnapshotStatusAsync(Guid seedId, string status);
 
     /// <summary>

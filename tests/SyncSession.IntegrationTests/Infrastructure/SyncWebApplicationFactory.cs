@@ -46,7 +46,10 @@ public class SyncWebApplicationFactory : WebApplicationFactory<Program>
                         TestAuthHandler.SchemeName, _ => { });
 
                 services.AddAuthorization(o =>
-                    o.AddPolicy("SyncAccess", p => p.RequireAuthenticatedUser()));
+                {
+                    o.AddPolicy("SyncAccess",      p => p.RequireAuthenticatedUser());
+                    o.AddPolicy("SyncAdminAccess", p => p.RequireAuthenticatedUser());
+                });
             });
         }
     }

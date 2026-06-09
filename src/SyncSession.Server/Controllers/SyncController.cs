@@ -25,6 +25,7 @@ public class SyncController : ControllerBase
     private readonly ISessionTracker _sessionTracker;
     private readonly ITempTableManager _tempTableManager;
     private readonly ISeedService _seedService;
+    private readonly ISyncGate _syncGate;
     private readonly SyncSessionOptions _options;
     private readonly ILogger<SyncController> _logger;
     private readonly IWebHostEnvironment _environment;
@@ -34,6 +35,7 @@ public class SyncController : ControllerBase
         ISessionTracker sessionTracker,
         ITempTableManager tempTableManager,
         ISeedService seedService,
+        ISyncGate syncGate,
         SyncSessionOptions options,
         ILogger<SyncController> logger,
         IWebHostEnvironment environment)
@@ -42,6 +44,7 @@ public class SyncController : ControllerBase
         _sessionTracker = sessionTracker;
         _tempTableManager = tempTableManager;
         _seedService = seedService;
+        _syncGate = syncGate;
         _options = options;
         _logger = logger;
         _environment = environment;
@@ -62,6 +65,12 @@ public class SyncController : ControllerBase
     {
         try
         {
+            if (_syncGate.IsGated)
+            {
+                Response.Headers["Retry-After"] = "60";
+                return StatusCode(503, new PushSessionBeginResponse { Success = false, ErrorMessage = "Server is in maintenance mode. Retry after 60 seconds." });
+            }
+
             var versionCheck = ValidateProtocolVersion(request.DeviceId);
             if (versionCheck != null) return versionCheck;
 
@@ -263,6 +272,12 @@ public class SyncController : ControllerBase
     {
         try
         {
+            if (_syncGate.IsGated)
+            {
+                Response.Headers["Retry-After"] = "60";
+                return StatusCode(503, new PullSessionBeginResponse { Success = false, ErrorMessage = "Server is in maintenance mode. Retry after 60 seconds." });
+            }
+
             var versionCheck = ValidateProtocolVersion(request.DeviceId);
             if (versionCheck != null) return versionCheck;
 
@@ -414,6 +429,14 @@ public class SyncController : ControllerBase
         {
             Response.StatusCode = 400;
             await Response.WriteAsync("deviceId query parameter is required.", ct);
+            return;
+        }
+
+        if (_syncGate.IsGated)
+        {
+            Response.StatusCode = 503;
+            Response.Headers["Retry-After"] = "60";
+            await Response.WriteAsync("Server is in maintenance mode. Retry after 60 seconds.", ct);
             return;
         }
 

@@ -103,7 +103,7 @@ public class SessionCleanupService : ICleanupService
         // Get temp tables for this session
         var tempTables = await _database.GetSessionTempTableInfoAsync(session.SessionId);
 
-        if (session.SessionType == "Pull")
+        if (session.SessionType == SyncConstants.SESSION_TYPE_PULL)
         {
             // Pull sessions: shared tables use SessionId column
             var sharedTableNames = tempTables

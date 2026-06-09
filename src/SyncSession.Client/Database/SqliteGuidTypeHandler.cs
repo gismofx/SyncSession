@@ -10,12 +10,14 @@ namespace SyncSession.Client.Database;
 /// </summary>
 public class SqliteGuidTypeHandler : SqlMapper.TypeHandler<Guid>
 {
+    /// <inheritdoc/>
     public override void SetValue(IDbDataParameter parameter, Guid value)
     {
         parameter.Value = value.ToString();
         parameter.DbType = DbType.String;
     }
 
+    /// <inheritdoc/>
     public override Guid Parse(object value)
     {
         return Guid.Parse(value.ToString()!);
@@ -28,6 +30,7 @@ public class SqliteGuidTypeHandler : SqlMapper.TypeHandler<Guid>
 /// </summary>
 public class SqliteNullableGuidTypeHandler : SqlMapper.TypeHandler<Guid?>
 {
+    /// <inheritdoc/>
     public override void SetValue(IDbDataParameter parameter, Guid? value)
     {
         if (value.HasValue)
@@ -41,6 +44,7 @@ public class SqliteNullableGuidTypeHandler : SqlMapper.TypeHandler<Guid?>
         }
     }
 
+    /// <inheritdoc/>
     public override Guid? Parse(object value)
     {
         if (value is null || value is DBNull)

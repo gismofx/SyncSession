@@ -536,6 +536,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
 
     #endregion
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (_disposed) return;

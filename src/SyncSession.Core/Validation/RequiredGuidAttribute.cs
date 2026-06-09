@@ -13,11 +13,13 @@ namespace SyncSession.Core.Validation;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter)]
 public class RequiredGuidAttribute : ValidationAttribute
 {
+    /// <inheritdoc/>
     public RequiredGuidAttribute()
         : base("The {0} field is required and cannot be empty.")
     {
     }
 
+    /// <inheritdoc/>
     public override bool IsValid(object? value)
     {
         if (value is null)

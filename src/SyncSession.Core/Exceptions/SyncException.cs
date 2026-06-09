@@ -7,15 +7,18 @@ namespace SyncSession.Core.Exceptions;
 /// </summary>
 public class SyncException : Exception
 {
+    /// <inheritdoc/>
     public SyncException()
     {
     }
 
+    /// <inheritdoc/>
     public SyncException(string message) 
         : base(message)
     {
     }
 
+    /// <inheritdoc/>
     public SyncException(string message, Exception innerException) 
         : base(message, innerException)
     {

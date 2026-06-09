@@ -32,6 +32,12 @@ public class HttpSyncServerApi : ISyncServerApi
     private static readonly string _packageVersion =
         typeof(HttpSyncServerApi).Assembly.GetName().Version?.ToString() ?? "unknown";
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="HttpSyncServerApi"/>.
+    /// </summary>
+    /// <param name="httpClient">Configured <see cref="HttpClient"/> for server communication.</param>
+    /// <param name="baseUrl">Base URL of the SyncSession server (e.g., <c>https://host/api</c>).</param>
+    /// <param name="deviceId">Unique identifier for this device, sent with every sync request.</param>
     public HttpSyncServerApi(HttpClient httpClient, string baseUrl, Guid deviceId)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
