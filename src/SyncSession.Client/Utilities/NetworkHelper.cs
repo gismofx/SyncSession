@@ -11,7 +11,8 @@ public class NetworkHelper
     /// <summary>
     /// Returns <c>true</c> if any network interface is available.
     /// </summary>
-    public bool IsNetworkAvailable()
+    /// <remarks>Virtual so tests can simulate offline/online without a real interface.</remarks>
+    public virtual bool IsNetworkAvailable()
     {
         try
         {
@@ -28,7 +29,7 @@ public class NetworkHelper
     /// </summary>
     /// <param name="host">Host to ping (default: <c>8.8.8.8</c>).</param>
     /// <param name="timeout">Timeout in milliseconds (default: 3000).</param>
-    public bool IsInternetReachable(string host = "8.8.8.8", int timeout = 3000)
+    public virtual bool IsInternetReachable(string host = "8.8.8.8", int timeout = 3000)
     {
         try
         {

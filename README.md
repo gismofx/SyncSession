@@ -106,8 +106,25 @@ var syncEngine = ClientSyncEngineBuilder.Build(
     entitiesAssembly: typeof(Customer).Assembly
 );
 
-await syncEngine.SyncAsync();
+await syncEngine.SynchronizeAsync();
 ```
+
+> 📖 **New to SyncSession?** See the [Getting Started guide](docs/getting-started.md) for a full walkthrough and common gotchas.
+
+### Two ways to sync
+
+`SynchronizeAsync` on the **engine** gives you full control (you handle retry and connectivity). `SyncCoordinator` wraps the engine to add skip-if-offline and automatic retry — handy for a simple "Sync now" button:
+
+```csharp
+// Full control — you own retry + connectivity
+await engine.SynchronizeAsync(progress, cancellationToken: ct);
+
+// Batteries-included — skips when offline, retries transient failures
+var coordinator = new SyncCoordinator(engine);
+await coordinator.SyncAsync(progress, requireNetwork: true, cancellationToken: ct);
+```
+
+See [Getting Started](docs/getting-started.md#two-ways-to-sync-engine-vs-coordinator) for DI registration and when to use each.
 
 ---
 

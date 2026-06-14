@@ -28,6 +28,7 @@ public static class FailureRecoveryScenario
             PullBatchSize = 1000,
         };
         config.RegisterTable<Customer>("Customers", priority: 1);
+        config.TenantId = tenantId; // Customer is multi-tenant — scope the engine to this tenant
 
         using var client = new ClientSimulator(clientId, tenantId, dbPath, options.ServerUrl, "FailureUser", config, true);
 
@@ -160,6 +161,7 @@ public static class FailureRecoveryScenario
             PullBatchSize = 1000
         };
         config.RegisterTable<Customer>("Customers", priority: 1);
+        config.TenantId = tenantId; // Customer is multi-tenant — scope the engine to this tenant
 
         //using var tempClient = new ClientSimulator(tempClientId, tempDbPath, options.ServerUrl, "TempUser");//did not have a config
         using var tempClient = new ClientSimulator(tempClientId, tenantId, tempDbPath, options.ServerUrl, "TempUser", config);

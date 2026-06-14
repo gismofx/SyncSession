@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SyncSession.Core.Constants;
 using SyncSession.Core.DTOs.Push;
+using SyncSession.Core.Exceptions;
 using SyncSession.Core.Interfaces;
 using SyncSession.Core.Models;
 
@@ -40,13 +41,28 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
         _serverClient = serverClient ?? throw new ArgumentNullException(nameof(serverClient));
         _deviceId = deviceId;
         _config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
+        // Guard: multi-tenant tables require a configured tenant. Without one, dirty-record
+        // selection is unfiltered (see IClientDatabase.GetDirtyRecordsAsync) and would
+        // push/pull across ALL tenants. Fail fast at construction.
+        if (_config.TenantId == null &&
+            _config.GetTables().Any(t => typeof(IMultiTenantSyncEntity).IsAssignableFrom(t.EntityType)))
+        {
+            throw new InvalidOperationException(
+                "ClientSyncConfiguration.TenantId is null but one or more registered tables are " +
+                "multi-tenant (IMultiTenantSyncEntity). Set TenantId before building the engine, " +
+                "otherwise dirty-record selection will not be tenant-filtered.");
+        }
     }
 
     /// <inheritdoc />
     public async Task<SyncResult> SynchronizeAsync(
         IProgress<SyncProgress>? progress = null,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default)
     {
+        GuardTenant(context);
+
         var result = new SyncResult
         {
             StartedAtUtc = DateTime.UtcNow
@@ -62,10 +78,10 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
                 StatusMessage = "Connecting to server..."
             });
 
-            var pushCount = await PushAsync(progress, cancellationToken);
+            var pushCount = await PushAsync(progress, context, cancellationToken);
             result.RecordsPushed = pushCount;
 
-            var pullCount = await PullAsync(progress, cancellationToken);
+            var pullCount = await PullAsync(progress, context, cancellationToken);
             result.RecordsPulled = pullCount;
 
             progress?.Report(new SyncProgress
@@ -100,8 +116,11 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     /// <inheritdoc />
     public async Task<int> PushAsync(
         IProgress<SyncProgress>? progress = null,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default)
     {
+        GuardTenant(context);
+
         var tables = _config.GetTables().ToList();
         var totalTables = tables.Count * 2;
 
@@ -149,7 +168,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
             StatusMessage = "Opening push session..."
         });
 
-        var sessionId = await _serverClient.BeginPushAsync(tableSyncInfo, _config.TenantId, _config.UserDisplayName);
+        var sessionId = await _serverClient.BeginPushAsync(tableSyncInfo, _config.TenantId, ResolveUserDisplayName(context));
 
         var totalPushed = 0;
         var tableIndex = 0;
@@ -209,8 +228,11 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     /// <inheritdoc />
     public async Task<int> PullAsync(
         IProgress<SyncProgress>? progress = null,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default)
     {
+        GuardTenant(context);
+
         var tables = _config.GetTables().ToList();
         var tableCount = tables.Count;
         var totalTables = tableCount * 2;
@@ -227,7 +249,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
         var response = await _serverClient.BeginPullAsync(
             tables.Select(t => t.TableName).ToList(),
             _config.TenantId,
-            _config.UserDisplayName);
+            ResolveUserDisplayName(context));
 
         if (response.Tables.All(t => t.Value.TotalRecords == 0))
         {
@@ -316,6 +338,23 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     }
 
     #region Private Helpers
+
+    /// <summary>
+    /// Fail-closed tenant guard. When the caller supplies an expected tenant that differs from
+    /// the engine's configured tenant, throws <see cref="TenantMismatchException"/> before any I/O.
+    /// </summary>
+    private void GuardTenant(SyncContext? context)
+    {
+        if (context?.ExpectedTenantId is Guid expected && expected != _config.TenantId)
+            throw new TenantMismatchException(_config.TenantId, expected);
+    }
+
+    /// <summary>
+    /// Resolves the user display name for this sync: the per-call override when supplied,
+    /// otherwise the configured value.
+    /// </summary>
+    private string? ResolveUserDisplayName(SyncContext? context)
+        => context?.UserDisplayName ?? _config.UserDisplayName;
 
     /// <summary>
     /// Polls the server until the push session reaches Committed or Failed status.

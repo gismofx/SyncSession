@@ -49,6 +49,8 @@ public static class MultiClientScenario
         //using var clientA = new ClientSimulator(clientAId, dbPathA, options.ServerUrl, "UserA", configA);
         //using var clientB = new ClientSimulator(clientBId, dbPathB, options.ServerUrl, "UserB", configB);
         var tenantId = Guid.NewGuid();
+        configA.TenantId = tenantId; // Customer is multi-tenant — scope both engines to this tenant
+        configB.TenantId = tenantId;
         using var clientA = new ClientSimulator(
             clientAId,tenantId, dbPathA, options.ServerUrl, "UserA", configA,
             deleteOnDispose: !options.PersistDatabases);

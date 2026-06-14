@@ -27,6 +27,7 @@ public static class SimpleScenario
             PullBatchSize = 1000
         };
         config.RegisterTable<Customer>("Customers", priority: 1);
+        config.TenantId = tenantId; // Customer is multi-tenant — scope the engine to this tenant
 
         using var client = new ClientSimulator(clientId, tenantId, dbPath, options.ServerUrl, "SimpleUser", config,true);
 

@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using SyncSession.Client.Database;
 using SyncSession.Client.Engine;
 using SyncSession.Client.Http;
+using SyncSession.Client.Services;
 using SyncSession.Core.Interfaces;
 using SyncSession.Core.Models;
 using SyncSession.Samples.Desktop.ViewModels;
@@ -106,8 +107,12 @@ public class App : Application
             return db;
         });
 
-        // Sync engine
-        services.AddSingleton<ISyncEngine>(sp =>
+        // Sync engine (concrete type — the coordinator depends on it).
+        // Singleton is fine in this single-user demo (identity is fixed in appsettings).
+        // In apps where users can log out / switch on the same machine, rebuild the engine
+        // on login instead — it snapshots TenantId/UserDisplayName at Build() time.
+        // See docs/getting-started.md → "Dependency injection".
+        services.AddSingleton<ClientSyncEngine>(sp =>
         {
             var httpFactory = sp.GetRequiredService<IHttpClientFactory>();
             var http = httpFactory.CreateClient();
@@ -118,6 +123,14 @@ public class App : Application
                 db, serverApi, deviceId,
                 syncConfig);
         });
+
+        // Expose the same instance as ISyncEngine (the control path)
+        services.AddSingleton<ISyncEngine>(sp => sp.GetRequiredService<ClientSyncEngine>());
+
+        // High-level coordinator (skip-if-offline + retry) — the convenience path
+        // demonstrated by SyncStatusViewModel.
+        services.AddSingleton<SyncCoordinator>(sp =>
+            new SyncCoordinator(sp.GetRequiredService<ClientSyncEngine>()));
 
         // Config values needed by ViewModels
         services.AddSingleton(_ => new AppSettings(serverUrl, tenantId, userId));

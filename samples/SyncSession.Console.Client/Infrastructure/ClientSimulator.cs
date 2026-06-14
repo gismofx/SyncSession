@@ -189,7 +189,7 @@ public class ClientSimulator : IDisposable
         IProgress<SyncProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        return await _syncEngine.SynchronizeAsync(progress, cancellationToken);
+        return await _syncEngine.SynchronizeAsync(progress, cancellationToken: cancellationToken);
     }
 
     /// <summary>

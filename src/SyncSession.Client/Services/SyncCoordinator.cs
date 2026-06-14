@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SyncSession.Client.Engine;
 using SyncSession.Client.Utilities;
+using SyncSession.Core.Exceptions;
 using SyncSession.Core.Interfaces;
 using SyncSession.Core.Models;
 
@@ -39,10 +40,12 @@ public class SyncCoordinator
     /// </summary>
     /// <param name="progress">Optional progress reporter for UI updates.</param>
     /// <param name="requireNetwork">Whether to check network availability before syncing.</param>
+    /// <param name="context">Optional per-call context (expected-tenant guard, user display name override).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<SyncResult> SyncAsync(
         IProgress<SyncProgress>? progress = null,
         bool requireNetwork = true,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default)
     {
         if (requireNetwork && !_networkHelper.IsNetworkAvailable())
@@ -57,7 +60,7 @@ public class SyncCoordinator
         }
 
         return await _retryPolicy.ExecuteAsync(
-            () => _syncEngine.SynchronizeAsync(progress, cancellationToken),
+            () => _syncEngine.SynchronizeAsync(progress, context, cancellationToken),
             cancellationToken);
     }
 
@@ -65,16 +68,21 @@ public class SyncCoordinator
     /// Push only (upload local changes).
     /// </summary>
     /// <param name="progress">Optional progress reporter for UI updates.</param>
+    /// <param name="requireNetwork">When <c>true</c> (default), throws <see cref="NetworkUnavailableException"/> if offline before attempting the push.</param>
+    /// <param name="context">Optional per-call context (expected-tenant guard, user display name override).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="NetworkUnavailableException">No network is available and <paramref name="requireNetwork"/> is <c>true</c>.</exception>
     public async Task<int> PushAsync(
         IProgress<SyncProgress>? progress = null,
+        bool requireNetwork = true,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        if (!_networkHelper.IsNetworkAvailable())
-            throw new InvalidOperationException("Network unavailable");
+        if (requireNetwork && !_networkHelper.IsNetworkAvailable())
+            throw new NetworkUnavailableException();
 
         return await _retryPolicy.ExecuteAsync(
-            () => _syncEngine.PushAsync(progress, cancellationToken),
+            () => _syncEngine.PushAsync(progress, context, cancellationToken),
             cancellationToken);
     }
 
@@ -82,16 +90,21 @@ public class SyncCoordinator
     /// Pull only (download server changes).
     /// </summary>
     /// <param name="progress">Optional progress reporter for UI updates.</param>
+    /// <param name="requireNetwork">When <c>true</c> (default), throws <see cref="NetworkUnavailableException"/> if offline before attempting the pull.</param>
+    /// <param name="context">Optional per-call context (expected-tenant guard, user display name override).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="NetworkUnavailableException">No network is available and <paramref name="requireNetwork"/> is <c>true</c>.</exception>
     public async Task<int> PullAsync(
         IProgress<SyncProgress>? progress = null,
+        bool requireNetwork = true,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default)
     {
-        if (!_networkHelper.IsNetworkAvailable())
-            throw new InvalidOperationException("Network unavailable");
+        if (requireNetwork && !_networkHelper.IsNetworkAvailable())
+            throw new NetworkUnavailableException();
 
         return await _retryPolicy.ExecuteAsync(
-            () => _syncEngine.PullAsync(progress, cancellationToken),
+            () => _syncEngine.PullAsync(progress, context, cancellationToken),
             cancellationToken);
     }
 }

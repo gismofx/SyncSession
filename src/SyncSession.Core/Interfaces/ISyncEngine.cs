@@ -15,29 +15,35 @@ public interface ISyncEngine : IDisposable
     /// Perform a full synchronization (push then pull).
     /// </summary>
     /// <param name="progress">Optional progress reporter for UI updates.</param>
+    /// <param name="context">Optional per-call context: expected-tenant guard and user display name override.</param>
     /// <param name="cancellationToken">Cancellation token to stop operation.</param>
     /// <returns>Sync result containing record counts and status.</returns>
     Task<SyncResult> SynchronizeAsync(
         IProgress<SyncProgress>? progress = null,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Push local changes to server.
     /// </summary>
     /// <param name="progress">Optional progress reporter for UI updates.</param>
+    /// <param name="context">Optional per-call context: expected-tenant guard and user display name override.</param>
     /// <param name="cancellationToken">Cancellation token to stop operation.</param>
     /// <returns>Number of records pushed.</returns>
     Task<int> PushAsync(
         IProgress<SyncProgress>? progress = null,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Pull server changes to local.
     /// </summary>
     /// <param name="progress">Optional progress reporter for UI updates.</param>
+    /// <param name="context">Optional per-call context: expected-tenant guard and user display name override.</param>
     /// <param name="cancellationToken">Cancellation token to stop operation.</param>
     /// <returns>Number of records pulled.</returns>
     Task<int> PullAsync(
         IProgress<SyncProgress>? progress = null,
+        SyncContext? context = null,
         CancellationToken cancellationToken = default);
 }

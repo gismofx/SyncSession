@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using SyncSession.Client.Services;
 using SyncSession.Core.Interfaces;
 using SyncSession.Core.Models;
 
@@ -15,7 +16,7 @@ namespace SyncSession.Samples.Desktop.ViewModels;
 /// </summary>
 public partial class SyncStatusViewModel : ObservableObject
 {
-    private readonly ISyncEngine _syncEngine;
+    private readonly SyncCoordinator _coordinator;
     private readonly ILogger<SyncStatusViewModel> _logger;
     private CancellationTokenSource? _cts;
 
@@ -57,10 +58,10 @@ public partial class SyncStatusViewModel : ObservableObject
     // Overlay is visible when syncing OR showing outcome
     public bool IsOverlayVisible => IsSyncing || IsSyncComplete;
 
-    public SyncStatusViewModel(ISyncEngine syncEngine, ILogger<SyncStatusViewModel> logger)
+    public SyncStatusViewModel(SyncCoordinator coordinator, ILogger<SyncStatusViewModel> logger)
     {
-        _syncEngine = syncEngine;
-        _logger     = logger;
+        _coordinator = coordinator;
+        _logger      = logger;
     }
 
     [RelayCommand(CanExecute = nameof(CanSync))]
@@ -99,21 +100,25 @@ public partial class SyncStatusViewModel : ObservableObject
 
         try
         {
-            var result = await _syncEngine.SynchronizeAsync(progress, _cts.Token);
+            // Coordinator: skips cleanly when offline (returns a failed result rather
+            // than throwing) and retries transient failures before surfacing them here.
+            var result = await _coordinator.SyncAsync(progress, requireNetwork: true, cancellationToken: _cts.Token);
 
-            LastSyncedAt           = DateTime.Now;
-            IsOnline               = true;
             OverallProgressPercent = 100;
             TableProgressPercent   = 100;
 
             if (result.Success)
             {
+                LastSyncedAt       = DateTime.Now;
+                IsOnline           = true;
                 IsSyncSuccess      = true;
                 SyncOutcomeMessage = "Sync completed successfully.";
                 SyncCompleted?.Invoke();
             }
             else
             {
+                // Coordinator returns a failed result (no throw) when offline.
+                IsOnline           = false;
                 IsSyncError        = true;
                 SyncOutcomeMessage = $"Sync failed: {result.ErrorMessage}";
             }
