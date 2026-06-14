@@ -335,6 +335,54 @@ convenience.
 
 ---
 
+## Tenant binding (multi-tenant)
+
+For multi-tenant apps, SyncSession binds each local database to exactly **one
+tenant** and refuses to sync it under any other. This closes a gap the per-call
+`ExpectedTenantId` guard cannot cover on its own: that guard compares the caller's
+expected tenant to the tenant the engine was *built* with, so if both come from the
+same (wrong) logged-in user they agree, and a pull could still write a second
+tenant's rows into a database that already holds the first tenant's data.
+
+The binding is an independent, persisted source of truth. It is written **at seed**
+(`ClientDatabaseSeedWriter` stamps the seeded tenant when the seed commits), and the
+engine asserts it on every multi-tenant push/pull/sync **before any I/O**:
+
+- **Bound tenant matches** the engine's tenant: sync proceeds.
+- **Bound tenant differs:** throws `TenantMismatchException`, no I/O. A different
+  user logging in on the same device cannot sync their tenant into this database.
+- **No binding yet:** governed by `ClientSyncConfiguration.TenantBindingPolicy`.
+
+```csharp
+var config = new ClientSyncConfiguration
+{
+    TenantId = currentUser.TenantId,
+    TenantBindingPolicy = TenantBindingPolicy.Reject   // default
+};
+```
+
+**`TenantBindingPolicy`:**
+
+- **`Reject`** (default, fail-closed): an unbound database throws
+  `TenantBindingMissingException`. A database should arrive already bound (seeded), so
+  a missing binding is treated as suspect.
+- **`Adopt`**: bind the configured tenant to the database on first sync. Use this
+  when *migrating* databases that were populated before tenant binding existed: they
+  have no marker yet, and Adopt fills it in on the next sync. Once every live database
+  has been bound, switch back to `Reject`.
+
+`Adopt` only ever fills a **missing** binding. A database already bound to a
+*different* tenant is still rejected with `TenantMismatchException`, regardless of
+policy. Single-tenant configurations (no `IMultiTenantSyncEntity` tables) skip binding
+entirely.
+
+> The binding lives in a small `LocalSyncMetadata` key/value table that
+> `IClientDatabase.InitializeAsync()` provisions alongside `LocalSyncState`. A custom
+> `IClientDatabase` must implement `GetClientMetadataAsync`/`SetClientMetadataAsync`
+> and create that table (see Gotchas).
+
+---
+
 ## Gotchas
 
 Things that bite people, roughly in order of how often:
@@ -396,6 +444,19 @@ Things that bite people, roughly in order of how often:
     display name and fail-closed-guard the tenant — see the warning under
     *Dependency injection* above.
 
+13. **Multi-tenant databases are bound to one tenant.** A seeded client is stamped
+    with its tenant; the engine then rejects any sync whose tenant differs
+    (`TenantMismatchException`) and, by default, rejects an *unbound* database
+    (`TenantBindingMissingException`). Migrating databases that were seeded before
+    this existed? Set `TenantBindingPolicy.Adopt` to bind them on first sync, then
+    switch back to `Reject`. See *Tenant binding* above.
+
+14. **A custom `IClientDatabase` must implement the metadata store.** Tenant binding
+    persists via `GetClientMetadataAsync`/`SetClientMetadataAsync`, backed by a
+    `LocalSyncMetadata` table. The built-in `SqliteClientDatabase` provides both and
+    creates the table in `InitializeAsync()`; a hand-rolled implementation (e.g. a
+    WASM/IndexedDB store) must do the same, or multi-tenant binding cannot persist.
+
 ---
 
 ## Seeding large datasets
@@ -405,7 +466,7 @@ modest data but impractical for very large tables (hundreds of thousands to
 millions of rows) — the batched round trips dominate. For that initial-population
 case, use the **seeding** path (`SyncSession.Client.Seeding`), which bulk-loads a
 client far faster than an incremental pull, after which normal `SynchronizeAsync()`
-keeps it current. Reach for seeding on first launch against a large existing dataset;
+keeps it current. For multi-tenant apps the seed also **binds the database to its tenant** on commit (see *Tenant binding* above). Reach for seeding on first launch against a large existing dataset;
 stick with incremental sync for everything after.
 
 ---

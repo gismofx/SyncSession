@@ -88,6 +88,33 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
     }
 
     /// <inheritdoc/>
+    public async Task<string?> GetClientMetadataAsync(string key)
+    {
+        var sql = "SELECT Value FROM LocalSyncMetadata WHERE Key = @Key";
+        var connection = await GetConnectionAsync();
+        return await connection.ExecuteScalarAsync<string?>(sql, new { Key = key });
+    }
+
+    /// <inheritdoc/>
+    public async Task SetClientMetadataAsync(string key, string value)
+    {
+        var sql = @"
+            INSERT INTO LocalSyncMetadata (Key, Value, UpdatedAtUtc)
+            VALUES (@Key, @Value, @Now)
+            ON CONFLICT(Key) DO UPDATE SET
+                Value = @Value,
+                UpdatedAtUtc = @Now";
+
+        var connection = await GetConnectionAsync();
+        await connection.ExecuteAsync(sql, new
+        {
+            Key = key,
+            Value = value,
+            Now = DateTime.UtcNow.ToString("O")
+        });
+    }
+
+    /// <inheritdoc/>
     public async Task<IEnumerable<T>> GetDirtyRecordsAsync<T>(Guid? tenantId = null) where T : ISyncEntity
     {
         var tableName = TableNameResolver.GetTableName<T>();
@@ -182,7 +209,7 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
     }
 
     /// <summary>
-    /// Initializes the local sync state table if it does not already exist.
+    /// Initializes the local sync state and metadata tables if they do not already exist.
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -192,6 +219,13 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
                 LastSyncVersion INTEGER NOT NULL DEFAULT 0,
                 LastSyncCompletedAtUtc TEXT,
                 CreatedAtUtc TEXT NOT NULL DEFAULT (datetime('now')),
+                UpdatedAtUtc TEXT NOT NULL DEFAULT (datetime('now'))
+            )");
+
+        await _connection.ExecuteAsync(@"
+            CREATE TABLE IF NOT EXISTS LocalSyncMetadata (
+                Key          TEXT NOT NULL PRIMARY KEY,
+                Value        TEXT NOT NULL,
                 UpdatedAtUtc TEXT NOT NULL DEFAULT (datetime('now'))
             )");
     }

@@ -26,6 +26,15 @@ public class ClientSyncConfiguration : SyncConfiguration
     public string? UserDisplayName { get; set; }
 
     /// <summary>
+    /// What to do when a multi-tenant sync runs against a local database that has no persisted
+    /// tenant binding (default: <see cref="TenantBindingPolicy.Reject"/>). Set to
+    /// <see cref="TenantBindingPolicy.Adopt"/> to bind the configured tenant on first sync when
+    /// migrating a database that was populated before tenant binding existed. A binding that is
+    /// present but for a <em>different</em> tenant is always rejected, regardless of this setting.
+    /// </summary>
+    public TenantBindingPolicy TenantBindingPolicy { get; set; } = TenantBindingPolicy.Reject;
+
+    /// <summary>
     /// Number of records sent to the server per push batch request (default: 1000).
     /// </summary>
     public int PushBatchSize { get; set; } = 1000;

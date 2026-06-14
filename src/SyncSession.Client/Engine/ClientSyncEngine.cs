@@ -22,6 +22,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     private readonly ISyncServerApi _serverClient;
     private readonly Guid _deviceId;
     private readonly ClientSyncConfiguration _config;
+    private readonly bool _isMultiTenant;
     private bool _disposed;
 
     /// <summary>
@@ -45,8 +46,10 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
         // Guard: multi-tenant tables require a configured tenant. Without one, dirty-record
         // selection is unfiltered (see IClientDatabase.GetDirtyRecordsAsync) and would
         // push/pull across ALL tenants. Fail fast at construction.
-        if (_config.TenantId == null &&
-            _config.GetTables().Any(t => typeof(IMultiTenantSyncEntity).IsAssignableFrom(t.EntityType)))
+        _isMultiTenant = _config.GetTables()
+            .Any(t => typeof(IMultiTenantSyncEntity).IsAssignableFrom(t.EntityType));
+
+        if (_config.TenantId == null && _isMultiTenant)
         {
             throw new InvalidOperationException(
                 "ClientSyncConfiguration.TenantId is null but one or more registered tables are " +
@@ -62,6 +65,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
         CancellationToken cancellationToken = default)
     {
         GuardTenant(context);
+        await EnforceTenantBindingAsync();
 
         var result = new SyncResult
         {
@@ -120,6 +124,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
         CancellationToken cancellationToken = default)
     {
         GuardTenant(context);
+        await EnforceTenantBindingAsync();
 
         var tables = _config.GetTables().ToList();
         var totalTables = tables.Count * 2;
@@ -232,6 +237,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
         CancellationToken cancellationToken = default)
     {
         GuardTenant(context);
+        await EnforceTenantBindingAsync();
 
         var tables = _config.GetTables().ToList();
         var tableCount = tables.Count;
@@ -347,6 +353,35 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     {
         if (context?.ExpectedTenantId is Guid expected && expected != _config.TenantId)
             throw new TenantMismatchException(_config.TenantId, expected);
+    }
+
+    /// <summary>
+    /// Enforces the persisted tenant binding for multi-tenant deployments. The local database is
+    /// bound to exactly one tenant — written at seed, or adopted on first sync when
+    /// <see cref="ClientSyncConfiguration.TenantBindingPolicy"/> is <c>Adopt</c>. A sync whose
+    /// configured tenant differs from the bound tenant is rejected before any I/O, preventing a
+    /// different tenant from syncing into a database that already holds another tenant's data.
+    /// </summary>
+    /// <remarks>No-op for single-tenant configurations (nothing tenant-scoped to protect).</remarks>
+    private async Task EnforceTenantBindingAsync()
+    {
+        if (!_isMultiTenant) return;
+        var current = _config.TenantId!.Value; // non-null guaranteed by the construction guard
+
+        var bound = await _clientDatabase.GetBoundTenantAsync();
+        if (bound is Guid boundTenant)
+        {
+            // A present binding for a different tenant always wins — Adopt only fills a missing one.
+            if (boundTenant != current)
+                throw new TenantMismatchException(current, boundTenant);
+            return;
+        }
+
+        // No binding yet: a migrated/pre-binding database, or one that was never seeded.
+        if (_config.TenantBindingPolicy == TenantBindingPolicy.Adopt)
+            await _clientDatabase.SetBoundTenantAsync(current);
+        else
+            throw new TenantBindingMissingException(current);
     }
 
     /// <summary>

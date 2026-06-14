@@ -36,6 +36,7 @@ Traditional version-based sync misses records during concurrent operations:
 - ✅ **Multi-table atomic sessions** — referential integrity maintained
 - ✅ **Last-in-wins conflict resolution** — server version wins on conflict
 - ✅ **Multi-tenant support** — tenant-scoped push/pull/seed operations
+- ✅ **Tenant-bound databases** — each client DB binds to one tenant; cross-tenant sync is rejected
 - ✅ **Full audit trail** — WHO + WHEN + WHAT on every synced record
 - ✅ **Zero-configuration client setup** — assembly scanning, no manual registration
 

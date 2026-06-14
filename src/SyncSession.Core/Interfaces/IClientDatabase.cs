@@ -33,6 +33,21 @@ public interface IClientDatabase
     /// <param name="tableName">Business table name (e.g., <c>Customers</c>).</param>
     /// <param name="version">Version number to store.</param>
     Task UpdateLastSyncVersionAsync(string tableName, long version);
+
+    // Client metadata key/value store (schema-version-independent)
+    /// <summary>
+    /// Gets a value from the client metadata store, or <c>null</c> if the key is not present.
+    /// Keys are case-sensitive.
+    /// </summary>
+    /// <param name="key">Metadata key (see <c>ClientMetadataKeys</c>).</param>
+    Task<string?> GetClientMetadataAsync(string key);
+
+    /// <summary>
+    /// Stores (inserts or overwrites) a value in the client metadata store. Keys are case-sensitive.
+    /// </summary>
+    /// <param name="key">Metadata key (see <c>ClientMetadataKeys</c>).</param>
+    /// <param name="value">Value to persist.</param>
+    Task SetClientMetadataAsync(string key, string value);
     
     // Generic type-safe operations (table name from [SyncTable] attribute)
     

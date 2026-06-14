@@ -80,5 +80,11 @@ public sealed class ClientDatabaseSeedWriter : ISeedDatabaseWriter
     }
 
     /// <inheritdoc/>
-    public Task CommitAsync(CancellationToken ct = default) => Task.CompletedTask;
+    public async Task CommitAsync(CancellationToken ct = default)
+    {
+        // Bind the local database to the seeded tenant. From here on, the sync engine rejects
+        // any attempt to sync this database under a different tenant. No-op for single-tenant.
+        if (_tenantId is Guid tenantId)
+            await _clientDatabase.SetBoundTenantAsync(tenantId);
+    }
 }
