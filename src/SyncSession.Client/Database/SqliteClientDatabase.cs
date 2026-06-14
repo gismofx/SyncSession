@@ -208,26 +208,12 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Initializes the local sync state and metadata tables if they do not already exist.
-    /// </summary>
+    /// <inheritdoc/>
     public async Task InitializeAsync()
     {
-        await _connection.ExecuteAsync(@"
-            CREATE TABLE IF NOT EXISTS LocalSyncState (
-                TableName TEXT PRIMARY KEY,
-                LastSyncVersion INTEGER NOT NULL DEFAULT 0,
-                LastSyncCompletedAtUtc TEXT,
-                CreatedAtUtc TEXT NOT NULL DEFAULT (datetime('now')),
-                UpdatedAtUtc TEXT NOT NULL DEFAULT (datetime('now'))
-            )");
-
-        await _connection.ExecuteAsync(@"
-            CREATE TABLE IF NOT EXISTS LocalSyncMetadata (
-                Key          TEXT NOT NULL PRIMARY KEY,
-                Value        TEXT NOT NULL,
-                UpdatedAtUtc TEXT NOT NULL DEFAULT (datetime('now'))
-            )");
+        var connection = await GetConnectionAsync();
+        foreach (var ddl in SqliteClientSchema.AllStatements)
+            await connection.ExecuteAsync(ddl);
     }
 
     /// <summary>

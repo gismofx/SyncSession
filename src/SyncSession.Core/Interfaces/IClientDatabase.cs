@@ -12,6 +12,18 @@ namespace SyncSession.Core.Interfaces;
 public interface IClientDatabase
 {
     /// <summary>
+    /// Creates the library's client-side bookkeeping tables (<c>LocalSyncState</c> and
+    /// <c>LocalSyncMetadata</c>) if they do not already exist.
+    /// </summary>
+    /// <remarks>
+    /// Call this <b>once at application startup</b>, before any seeding or synchronization runs —
+    /// the sync engine does not provision these tables itself. The operation is idempotent (every
+    /// statement is <c>CREATE TABLE IF NOT EXISTS</c>), so it is safe to call on every startup.
+    /// SQLite-backed implementations can use <c>SqliteClientSchema.AllStatements</c> for the DDL.
+    /// </remarks>
+    Task InitializeAsync();
+
+    /// <summary>
     /// Gets a database connection for executing queries.
     /// </summary>
     /// <returns>An open database connection.</returns>

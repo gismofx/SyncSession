@@ -126,6 +126,11 @@ the engine. Assembly scanning discovers every `[SyncTable]` type — no manual
 registration:
 
 ```csharp
+// Provision the library's local bookkeeping tables (LocalSyncState + LocalSyncMetadata).
+// Idempotent (CREATE TABLE IF NOT EXISTS), so it is safe on every startup. Do this before
+// the first seed or sync, or those operations hit a missing table.
+await clientDb.InitializeAsync();
+
 var syncEngine = ClientSyncEngineBuilder.Build(
     clientDatabase:   clientDb,        // your SQLite-backed IClientDatabase
     serverClient:     httpSyncApi,     // HTTP client pointed at the server
@@ -152,6 +157,13 @@ CREATE TABLE Customers (
     IsDeleted        INTEGER NOT NULL DEFAULT 0
 );
 ```
+
+> **Provision the local tables first.** With the built-in `SqliteClientDatabase`, the
+> `await clientDb.InitializeAsync()` call above creates the library's `LocalSyncState` and
+> `LocalSyncMetadata` bookkeeping tables (it does **not** create your business tables, which
+> you own). Every `IClientDatabase` exposes `InitializeAsync()`, so a custom store (e.g. a
+> WASM/IndexedDB one) implements it too and creates both bookkeeping tables in its own startup
+> path — run the shared `SqliteClientSchema.AllStatements` DDL so the schema can't drift. See Gotcha #14.
 
 ## Step 4 — Run a sync
 
@@ -454,8 +466,10 @@ Things that bite people, roughly in order of how often:
 14. **A custom `IClientDatabase` must implement the metadata store.** Tenant binding
     persists via `GetClientMetadataAsync`/`SetClientMetadataAsync`, backed by a
     `LocalSyncMetadata` table. The built-in `SqliteClientDatabase` provides both and
-    creates the table in `InitializeAsync()`; a hand-rolled implementation (e.g. a
-    WASM/IndexedDB store) must do the same, or multi-tenant binding cannot persist.
+    creates the table in `InitializeAsync()`. Since `InitializeAsync()` is part of the
+    `IClientDatabase` interface, a hand-rolled store (e.g. a WASM/IndexedDB one) must
+    provide it too — create the `LocalSyncState`/`LocalSyncMetadata` tables there using
+    `SqliteClientSchema.AllStatements` for the canonical DDL — or multi-tenant binding cannot persist.
 
 ---
 
