@@ -215,10 +215,10 @@ public class MySqlServerDatabase : IServerDatabase
     }
 
     /// <inheritdoc/>
-    public async Task MarkSessionsProcessedAsync(Guid deviceId, IEnumerable<Guid> sessionIds)
+    public async Task MarkSessionsProcessedAsync(Guid deviceId, IEnumerable<Guid> sessionIds, IDbTransaction? transaction = null)
     {
         var sql = @"
-            INSERT INTO ClientProcessedSessions (DeviceId, SessionId, ProcessedAtUtc)
+            INSERT IGNORE INTO ClientProcessedSessions (DeviceId, SessionId, ProcessedAtUtc)
             VALUES (@DeviceId, @SessionId, UTC_TIMESTAMP(6))";
 
         var parameters = sessionIds.Select(sessionId => new
@@ -227,8 +227,17 @@ public class MySqlServerDatabase : IServerDatabase
             SessionId = sessionId.ToString()
         }).ToList();
 
-        using var connection = await GetConnectionAsync();
-        await connection.ExecuteAsync(sql, parameters);
+        if (transaction != null)
+        {
+            // Transactional path - required when marking the pushing device at session commit,
+            // so a rolled-back session never leaves the device recorded as having seen it.
+            await transaction.Connection!.ExecuteAsync(sql, parameters, transaction);
+        }
+        else
+        {
+            using var connection = await GetConnectionAsync();
+            await connection.ExecuteAsync(sql, parameters);
+        }
 
         _logger?.LogDebug("Marked {SessionCount} sessions as processed for device {DeviceId}", 
             sessionIds.Count(), deviceId);

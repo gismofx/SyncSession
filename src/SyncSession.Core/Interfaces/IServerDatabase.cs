@@ -63,10 +63,13 @@ public interface IServerDatabase
     /// <param name="deviceId">The device that processed the sessions.</param>
     /// <param name="sessionIds">Session IDs that were successfully processed.</param>
     /// <remarks>
-    /// Called after device successfully applies pulled records.
-    /// Inserts records into ClientProcessedSessions table.
+    /// Called after a device successfully applies pulled records, and at push-session commit for
+    /// the pushing device itself (which already holds those records and must not pull them back).
+    /// Inserts records into ClientProcessedSessions table. Idempotent — re-marking is a no-op.
+    /// When marking at commit, pass the commit <paramref name="transaction"/> so that a rolled-back
+    /// session never leaves a device recorded as having seen records it never received.
     /// </remarks>
-    Task MarkSessionsProcessedAsync(Guid deviceId, IEnumerable<Guid> sessionIds);
+    Task MarkSessionsProcessedAsync(Guid deviceId, IEnumerable<Guid> sessionIds, IDbTransaction? transaction = null);
 
     /// <summary>
     /// Marks all currently-committed sessions as processed for a device after a seed operation.

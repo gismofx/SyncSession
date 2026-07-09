@@ -89,6 +89,16 @@ internal class SyncQueueProcessor : ISyncQueueProcessor
                 await _database.UpdateSessionStatusAsync(
                     sessionId, SyncConstants.STATUS_COMMITTED, transaction,
                     totalRows: totalRows, rowCountsJson: rowCountsJson);
+
+                // The pushing device already holds these records; without this it would see its own
+                // committed session as "unseen" on the next pull, re-download its own rows and
+                // overwrite its local copies. Marked inside the commit transaction so a rollback
+                // can never leave the device recorded as having seen records it never received.
+                if (session.DeviceId.HasValue)
+                {
+                    await _database.MarkSessionsProcessedAsync(
+                        session.DeviceId.Value, new[] { sessionId }, transaction);
+                }
             });
 
             await _tempTableManager.CleanupSessionTablesAsync(sessionId);
