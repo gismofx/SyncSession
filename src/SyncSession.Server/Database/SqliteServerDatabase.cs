@@ -169,19 +169,20 @@ public class SqliteServerDatabase : IServerDatabase
         return sessionIds.Select(id => Guid.Parse(id));
     }
 
-    public async Task MarkSessionsProcessedAsync(Guid deviceId, IEnumerable<Guid> sessionIds)
+    public async Task MarkSessionsProcessedAsync(Guid deviceId, IEnumerable<Guid> sessionIds, IDbTransaction? transaction = null)
     {
         foreach (var sessionId in sessionIds)
         {
             await _connection.ExecuteAsync(@"
-                INSERT INTO ClientProcessedSessions (DeviceId, SessionId, ProcessedAtUtc)
+                INSERT OR IGNORE INTO ClientProcessedSessions (DeviceId, SessionId, ProcessedAtUtc)
                 VALUES (@DeviceId, @SessionId, @ProcessedAtUtc)",
                 new
                 {
                     DeviceId = deviceId.ToString(),
                     SessionId = sessionId.ToString(),
                     ProcessedAtUtc = DateTime.UtcNow.ToString("O")
-                });
+                },
+                transaction);
         }
     }
 
