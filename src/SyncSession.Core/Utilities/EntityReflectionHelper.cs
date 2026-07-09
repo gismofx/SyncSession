@@ -705,13 +705,24 @@ public static class EntityReflectionHelper
     {
         if (element.ValueKind == System.Text.Json.JsonValueKind.String)
         {
-            // TryGetDateTimeOffset on every string was benchmarked (2026-02-22) against two
+            // Probing every string for a date was benchmarked (2026-02-22) against two
             // alternatives: digit-prefix guard and type-aware column lookup. Results across
             // BatchSize 1/100/1K/10K showed this strategy is fastest or co-fastest in all cases.
             // The digit-prefix guard adds GetString() allocation overhead; type-aware adds
             // HashSet + ToLowerInvariant() per key. Do not optimise without re-running benchmarks.
-            if (element.TryGetDateTimeOffset(out var dto))
-                return dto.UtcDateTime;
+            // (TryGetDateTime replaced TryGetDateTimeOffset here; same single-probe cost.)
+            //
+            // Distinguish "client stated a timezone" from "client stated none":
+            //   Unspecified -> no offset on the wire (clients serialize via ToString("s"), which
+            //                  emits neither an offset nor 'Z'). NEVER invent the server's offset:
+            //                  TryGetDateTimeOffset used to assume server-local here and .UtcDateTime
+            //                  then shifted every pushed DateTime by that offset (production: US
+            //                  Central, +5h), corrupting business dates such as CreationDate.
+            //                  Preserve the wall-clock exactly as entered. A client-supplied
+            //                  ModifiedAtUtc already holds DateTime.UtcNow, so it is stored as-is.
+            //   Local / Utc -> an explicit offset or 'Z' was sent. Honor it and normalize to UTC.
+            if (element.TryGetDateTime(out var dt))
+                return dt.Kind == DateTimeKind.Unspecified ? dt : dt.ToUniversalTime();
 
             return element.GetString();
         }
