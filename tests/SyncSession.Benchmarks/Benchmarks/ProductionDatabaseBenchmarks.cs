@@ -38,12 +38,6 @@ public class ProductionDatabaseBenchmarks
 
         // Schema from reflection — single source of truth
         var schemaSql = SqliteSchemaHelper.GetCreateTableSql<Customer>();
-        schemaSql += @"
-CREATE TABLE IF NOT EXISTS LocalSyncState (
-    TableName TEXT PRIMARY KEY,
-    LastSyncVersion INTEGER NOT NULL DEFAULT 0,
-    LastSyncCompletedAtUtc TEXT NOT NULL DEFAULT '1970-01-01T00:00:00Z'
-);";
         await _connection.ExecuteAsync(schemaSql);
 
         _clientDb = new SqliteClientDatabase(_connection);

@@ -12,13 +12,13 @@ namespace SyncSession.Core.Interfaces;
 public interface IClientDatabase
 {
     /// <summary>
-    /// Creates the library's client-side bookkeeping tables (<c>LocalSyncState</c> and
-    /// <c>LocalSyncMetadata</c>) if they do not already exist.
+    /// Creates the library's client-side bookkeeping table (<c>LocalSyncMetadata</c>)
+    /// if it does not already exist.
     /// </summary>
     /// <remarks>
     /// Call this <b>once at application startup</b>, before any seeding or synchronization runs —
-    /// the sync engine does not provision these tables itself. The operation is idempotent (every
-    /// statement is <c>CREATE TABLE IF NOT EXISTS</c>), so it is safe to call on every startup.
+    /// the sync engine does not provision this table itself. The operation is idempotent
+    /// (<c>CREATE TABLE IF NOT EXISTS</c>), so it is safe to call on every startup.
     /// SQLite-backed implementations can use <c>SqliteClientSchema.AllStatements</c> for the DDL.
     /// </remarks>
     Task InitializeAsync();
@@ -35,17 +35,6 @@ public interface IClientDatabase
     /// </summary>
     Task ExecuteInTransactionAsync(Func<IDbTransaction, Task> action);
     
-    // Version tracking (still uses string table name for flexibility)
-    /// <summary>Gets the last successfully synced version for a table.</summary>
-    /// <param name="tableName">Business table name (e.g., <c>Customers</c>).</param>
-    /// <returns>Last synced version number, or 0 if never synced.</returns>
-    Task<long> GetLastSyncVersionAsync(string tableName);
-
-    /// <summary>Persists the last successfully synced version for a table.</summary>
-    /// <param name="tableName">Business table name (e.g., <c>Customers</c>).</param>
-    /// <param name="version">Version number to store.</param>
-    Task UpdateLastSyncVersionAsync(string tableName, long version);
-
     // Client metadata key/value store (schema-version-independent)
     /// <summary>
     /// Gets a value from the client metadata store, or <c>null</c> if the key is not present.

@@ -7,16 +7,15 @@ namespace SyncSession.UnitTests.Client;
 
 /// <summary>
 /// Locks the single-source-of-truth contract for <see cref="SqliteClientSchema"/>: every SQLite
-/// implementation (built-in or custom) provisions its bookkeeping tables from these statements,
+/// implementation (built-in or custom) provisions its bookkeeping table from these statements,
 /// so the set must stay complete and idempotent.
 /// </summary>
 public class SqliteClientSchemaTests
 {
     [Fact]
-    public void AllStatements_ContainsBothBookkeepingTables()
+    public void AllStatements_ContainsMetadataBookkeepingTable()
     {
-        SqliteClientSchema.AllStatements.Should().HaveCount(2);
-        SqliteClientSchema.AllStatements.Should().Contain(SqliteClientSchema.LocalSyncStateDdl);
+        SqliteClientSchema.AllStatements.Should().HaveCount(1);
         SqliteClientSchema.AllStatements.Should().Contain(SqliteClientSchema.LocalSyncMetadataDdl);
     }
 
@@ -30,7 +29,6 @@ public class SqliteClientSchemaTests
     [Fact]
     public void Ddl_DeclaresExpectedTables()
     {
-        SqliteClientSchema.LocalSyncStateDdl.Should().Contain("LocalSyncState");
         SqliteClientSchema.LocalSyncMetadataDdl.Should().Contain("LocalSyncMetadata");
         // Metadata store is a case-sensitive key/value table.
         SqliteClientSchema.LocalSyncMetadataDdl.Should().Contain("Key");

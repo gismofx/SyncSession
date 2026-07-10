@@ -62,32 +62,6 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
     }
 
     /// <inheritdoc/>
-    public async Task<long> GetLastSyncVersionAsync(string tableName)
-    {
-        var sql = "SELECT LastSyncVersion FROM LocalSyncState WHERE TableName = @TableName";
-        var connection = await GetConnectionAsync();
-        return await connection.ExecuteScalarAsync<long>(sql, new { TableName = tableName });
-    }
-
-    /// <inheritdoc/>
-    public async Task UpdateLastSyncVersionAsync(string tableName, long version)
-    {
-        var sql = @"
-            INSERT INTO LocalSyncState (TableName, LastSyncVersion, LastSyncCompletedAtUtc)
-            VALUES (@TableName, @Version, @Now)
-            ON CONFLICT(TableName) DO UPDATE SET
-                LastSyncVersion = @Version,
-                LastSyncCompletedAtUtc = @Now";
-        
-        await _connection.ExecuteAsync(sql, new 
-        { 
-            TableName = tableName, 
-            Version = version,
-            Now = DateTime.UtcNow.ToString("O")
-        });
-    }
-
-    /// <inheritdoc/>
     public async Task<string?> GetClientMetadataAsync(string key)
     {
         var sql = "SELECT Value FROM LocalSyncMetadata WHERE Key = @Key";
