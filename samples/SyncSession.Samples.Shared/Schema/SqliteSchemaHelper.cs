@@ -76,7 +76,7 @@ public static class SqliteSchemaHelper
 
     /// <summary>
     /// Generate CREATE TABLE SQL for all standard sample entities
-    /// (Products, Customers, Orders, OrderItems) plus LocalSyncState.
+    /// (Products, Customers, Orders, OrderItems) plus LocalSyncMetadata.
     /// Tables are ordered by priority (FK-safe).
     /// </summary>
     public static string GetCreateAllTablesSql(Assembly? entitiesAssembly = null)
@@ -96,11 +96,11 @@ public static class SqliteSchemaHelper
             sb.AppendLine();
         }
 
-        // LocalSyncState table (used by SqliteClientDatabase)
-        sb.AppendLine(@"CREATE TABLE IF NOT EXISTS LocalSyncState (
-    TableName TEXT PRIMARY KEY,
-    LastSyncVersion INTEGER NOT NULL DEFAULT 0,
-    LastSyncCompletedAtUtc TEXT NOT NULL DEFAULT '1970-01-01T00:00:00Z'
+        // LocalSyncMetadata table (the library's client bookkeeping / tenant-binding store)
+        sb.AppendLine(@"CREATE TABLE IF NOT EXISTS LocalSyncMetadata (
+    Key          TEXT NOT NULL PRIMARY KEY,
+    Value        TEXT NOT NULL,
+    UpdatedAtUtc TEXT NOT NULL DEFAULT (datetime('now'))
 );");
 
         return sb.ToString();

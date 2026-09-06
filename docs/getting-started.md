@@ -126,7 +126,7 @@ the engine. Assembly scanning discovers every `[SyncTable]` type — no manual
 registration:
 
 ```csharp
-// Provision the library's local bookkeeping tables (LocalSyncState + LocalSyncMetadata).
+// Provision the library's local bookkeeping table (LocalSyncMetadata).
 // Idempotent (CREATE TABLE IF NOT EXISTS), so it is safe on every startup. Do this before
 // the first seed or sync, or those operations hit a missing table.
 await clientDb.InitializeAsync();
@@ -158,11 +158,11 @@ CREATE TABLE Customers (
 );
 ```
 
-> **Provision the local tables first.** With the built-in `SqliteClientDatabase`, the
-> `await clientDb.InitializeAsync()` call above creates the library's `LocalSyncState` and
-> `LocalSyncMetadata` bookkeeping tables (it does **not** create your business tables, which
+> **Provision the local table first.** With the built-in `SqliteClientDatabase`, the
+> `await clientDb.InitializeAsync()` call above creates the library's `LocalSyncMetadata`
+> bookkeeping table (it does **not** create your business tables, which
 > you own). Every `IClientDatabase` exposes `InitializeAsync()`, so a custom store (e.g. a
-> WASM/IndexedDB one) implements it too and creates both bookkeeping tables in its own startup
+> WASM/IndexedDB one) implements it too and creates that bookkeeping table in its own startup
 > path — run the shared `SqliteClientSchema.AllStatements` DDL so the schema can't drift. See Gotcha #14.
 
 ## Step 4 — Run a sync
@@ -389,7 +389,7 @@ policy. Single-tenant configurations (no `IMultiTenantSyncEntity` tables) skip b
 entirely.
 
 > The binding lives in a small `LocalSyncMetadata` key/value table that
-> `IClientDatabase.InitializeAsync()` provisions alongside `LocalSyncState`. A custom
+> `IClientDatabase.InitializeAsync()` provisions. A custom
 > `IClientDatabase` must implement `GetClientMetadataAsync`/`SetClientMetadataAsync`
 > and create that table (see Gotchas).
 
@@ -468,7 +468,7 @@ Things that bite people, roughly in order of how often:
     `LocalSyncMetadata` table. The built-in `SqliteClientDatabase` provides both and
     creates the table in `InitializeAsync()`. Since `InitializeAsync()` is part of the
     `IClientDatabase` interface, a hand-rolled store (e.g. a WASM/IndexedDB one) must
-    provide it too — create the `LocalSyncState`/`LocalSyncMetadata` tables there using
+    provide it too — create the `LocalSyncMetadata` table there using
     `SqliteClientSchema.AllStatements` for the canonical DDL — or multi-tenant binding cannot persist.
 
 ---

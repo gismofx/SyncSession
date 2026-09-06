@@ -80,8 +80,8 @@ public class ClientSimulator : IDisposable
         //using var connection = new SqliteConnection($"Data Source={_dbPath}");
         var connection = await _clientDb.GetConnectionAsync();
 
-        // Create the library's state + metadata tables (LocalSyncState, LocalSyncMetadata), then
-        // bind this freshly-created database to its tenant. Real apps get the binding automatically
+        // Create the library's metadata table (LocalSyncMetadata), then bind this freshly-created
+        // database to its tenant. Real apps get the binding automatically
         // at seed (ClientDatabaseSeedWriter.CommitAsync); this generate-and-push sample, which has
         // no server-seed step, establishes it explicitly so the engine's tenant-binding guard
         // (TenantBindingPolicy.Reject by default) is satisfied.
