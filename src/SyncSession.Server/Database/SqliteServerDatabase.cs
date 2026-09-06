@@ -1009,6 +1009,17 @@ public class SqliteServerDatabase : IServerDatabase
     /// To be implemented if SQLite server-side sync requires shared temp table support.
     /// </remarks>
     public Task EnsureSharedTempTablesAsync() => Task.CompletedTask;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// SQLite stub. The defect this exists to fix is a MySQL optimiser behaviour on multi-million-row
+    /// tables; SQLite server deployments are test and sample scenarios, so there is nothing to ensure.
+    /// Returns an empty list rather than throwing, so a caller can run against either backend.
+    /// </remarks>
+    public Task<IReadOnlyList<SyncIndexAction>> EnsureSyncIndexesAsync(
+        bool createMissing = true,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<SyncIndexAction>>(new List<SyncIndexAction>());
     
     /// <inheritdoc/>
     public Task<int> UpsertDirectAsync(string tableName, List<object> records, Guid sessionId, IDbTransaction? transaction = null)

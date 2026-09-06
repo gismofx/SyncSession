@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading;
 using System.Threading.Tasks;
 using SyncSession.Core.DTOs;
 using SyncSession.Core.Models;
@@ -687,6 +688,38 @@ public interface IServerDatabase
     /// </para>
     /// </remarks>
     Task EnsureSharedTempTablesAsync();
+
+    /// <summary>
+    /// Ensures every registered entity table carries the index the pull path's own predicate needs,
+    /// creating it where it is missing.
+    /// </summary>
+    /// <param name="createMissing">
+    /// When <c>false</c>, nothing is issued and every missing index is reported as
+    /// <see cref="SyncIndexOutcome.WouldCreate"/> — the plan without the change.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// Cancels between tables. Index creation on a large table runs for minutes, and this is the one
+    /// schema-maintenance call that can be running when the host wants to shut down.
+    /// </param>
+    /// <returns>One <see cref="SyncIndexAction"/> per registered table, in table order.</returns>
+    /// <remarks>
+    /// The pull path filters on <c>SyncSessionId</c> and, for multi-tenant tables, <c>TenantId</c>
+    /// together (see <see cref="CountRecordsFromSessionsAsync"/> and
+    /// <see cref="SnapshotRecordsForPullAsync"/>). With no index covering both, MySQL abandons the
+    /// single-column indexes once the session-id list grows and scans the whole table on every pull.
+    /// <para>
+    /// Unlike <see cref="EnsureSharedTempTablesAsync"/>, this is an optimisation rather than a
+    /// correctness precondition: sync is correct without it and merely slow, so callers should run it
+    /// in the background rather than blocking startup on it.
+    /// </para>
+    /// <para>
+    /// Creates only — never drops. An index this makes redundant is logged for the operator to decide
+    /// about; removing storage the library did not create is not the library's call.
+    /// </para>
+    /// </remarks>
+    Task<IReadOnlyList<SyncIndexAction>> EnsureSyncIndexesAsync(
+        bool createMissing = true,
+        CancellationToken cancellationToken = default);
 
     #endregion
 

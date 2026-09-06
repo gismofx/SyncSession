@@ -1154,6 +1154,231 @@ public class MySqlServerDatabase : IServerDatabase
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<SyncIndexAction>> EnsureSyncIndexesAsync(
+        bool createMissing = true,
+        CancellationToken cancellationToken = default)
+    {
+        var actions = new List<SyncIndexAction>();
+
+        _logger?.LogInformation(
+            "EnsureSyncIndexes: checking {Count} registered entity table(s) (createMissing={CreateMissing})",
+            _config.Tables.Count, createMissing);
+
+        using var connection = await GetConnectionAsync();
+
+        foreach (var kvp in _config.Tables)
+        {
+            // Cancel between tables, never mid-DDL: an index build already in flight is finished by
+            // the server whatever we do here, and abandoning the connection would only hide it.
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var tableName = kvp.Key;
+            var required = RequiredSyncIndexColumns(tableName);
+            var indexName = required.Count > 1
+                ? $"IX_{tableName}_Session_Tenant"
+                : $"IX_{tableName}_Session";
+
+            if (!await TableExistsAsync(connection, tableName, cancellationToken))
+            {
+                // Asked separately rather than inferred from "no index rows came back" — a table that
+                // exists with no indexes returns nothing either, and the two need different answers.
+                _logger?.LogWarning(
+                    "EnsureSyncIndexes: table '{Table}' not found — skipping", tableName);
+                actions.Add(new SyncIndexAction(
+                    tableName, indexName, required, SyncIndexOutcome.Skipped, "Table not found"));
+                continue;
+            }
+
+            var existing = await QueryIndexColumnsAsync(connection, tableName, cancellationToken);
+
+            // Any index whose leading columns are the ones we need already gives the optimiser what it
+            // needs, whatever it is called and whatever else it carries after them.
+            var satisfying = existing.FirstOrDefault(ix =>
+                ix.Value.Count >= required.Count &&
+                ix.Value.Take(required.Count).SequenceEqual(required, StringComparer.OrdinalIgnoreCase));
+
+            if (satisfying.Key is not null)
+            {
+                actions.Add(new SyncIndexAction(
+                    tableName, indexName, required, SyncIndexOutcome.AlreadyPresent,
+                    $"Satisfied by existing index '{satisfying.Key}'"));
+                continue;
+            }
+
+            if (!createMissing)
+            {
+                _logger?.LogInformation(
+                    "EnsureSyncIndexes: {Table} would get {Index} ({Columns})",
+                    tableName, indexName, string.Join(", ", required));
+                actions.Add(new SyncIndexAction(
+                    tableName, indexName, required, SyncIndexOutcome.WouldCreate));
+                continue;
+            }
+
+            actions.Add(await CreateSyncIndexAsync(
+                connection, tableName, indexName, required, existing, cancellationToken));
+        }
+
+        var created = actions.Count(a => a.Outcome == SyncIndexOutcome.Created);
+        var failed = actions.Count(a => a.Outcome == SyncIndexOutcome.Failed);
+        _logger?.LogInformation(
+            "EnsureSyncIndexes complete: {Created} created, {Present} already present, {Skipped} skipped, {Failed} failed",
+            created,
+            actions.Count(a => a.Outcome == SyncIndexOutcome.AlreadyPresent),
+            actions.Count(a => a.Outcome == SyncIndexOutcome.Skipped),
+            failed);
+
+        return actions.AsReadOnly();
+    }
+
+    /// <summary>
+    /// The columns the pull path's own predicate needs on one entity table, in index order.
+    /// </summary>
+    /// <remarks>
+    /// Mirrors <see cref="CountRecordsFromSessionsAsync"/> and <see cref="SnapshotRecordsForPullAsync"/>:
+    /// they filter on <c>SyncSessionId</c>, plus <c>TenantId</c> when the entity is multi-tenant.
+    /// <c>SyncSessionId</c> leads so this one index also serves the untenanted lookups and subsumes the
+    /// single-column <c>IX_&lt;T&gt;_Session</c> convention.
+    /// </remarks>
+    private IReadOnlyList<string> RequiredSyncIndexColumns(string tableName) =>
+        _metadataCache.IsMultiTenant(tableName)
+            ? new[] { "SyncSessionId", "TenantId" }
+            : new[] { "SyncSessionId" };
+
+    private static async Task<bool> TableExistsAsync(
+        IDbConnection connection, string tableName, CancellationToken cancellationToken)
+    {
+        const string sql = @"
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = @TableName";
+
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            sql, new { TableName = tableName }, cancellationToken: cancellationToken)) > 0;
+    }
+
+    /// <summary>
+    /// Every index on the table as its ordered column list, keyed by index name.
+    /// </summary>
+    private static async Task<Dictionary<string, List<string>>> QueryIndexColumnsAsync(
+        IDbConnection connection, string tableName, CancellationToken cancellationToken)
+    {
+        const string sql = @"
+            SELECT INDEX_NAME AS IndexName, COLUMN_NAME AS ColumnName
+            FROM INFORMATION_SCHEMA.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = @TableName
+            ORDER BY INDEX_NAME, SEQ_IN_INDEX";
+
+        // A named type rather than a ValueTuple: Dapper maps by property name, and tuple fields have
+        // none, so a tuple here would compile and then come back empty at runtime.
+        var rows = await connection.QueryAsync<IndexColumnRow>(
+            new CommandDefinition(sql, new { TableName = tableName }, cancellationToken: cancellationToken));
+
+        var byIndex = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in rows)
+        {
+            // SEQ_IN_INDEX ordering above is what makes this a column *sequence* and not a set —
+            // an index on (TenantId, SyncSessionId) must not be mistaken for the one we need.
+            if (!byIndex.TryGetValue(row.IndexName, out var columns))
+            {
+                columns = new List<string>();
+                byIndex[row.IndexName] = columns;
+            }
+            columns.Add(row.ColumnName);
+        }
+
+        return byIndex;
+    }
+
+    /// <summary>One row of INFORMATION_SCHEMA.STATISTICS, in SEQ_IN_INDEX order.</summary>
+    private sealed class IndexColumnRow
+    {
+        public string IndexName { get; set; } = string.Empty;
+        public string ColumnName { get; set; } = string.Empty;
+    }
+
+    private async Task<SyncIndexAction> CreateSyncIndexAsync(
+        IDbConnection connection,
+        string tableName,
+        string indexName,
+        IReadOnlyList<string> required,
+        Dictionary<string, List<string>> existing,
+        CancellationToken cancellationToken)
+    {
+        var columnList = string.Join(", ", required.Select(c => $"`{c}`"));
+
+        // INPLACE/NONE so a live server keeps serving reads and writes during the build. MariaDB may
+        // decline and fall back to a copying rebuild; 41f watches for that on production.
+        var ddl = $"ALTER TABLE `{tableName}` ADD INDEX `{indexName}` ({columnList}), " +
+                  "ALGORITHM=INPLACE, LOCK=NONE";
+
+        try
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                ddl, cancellationToken: cancellationToken, commandTimeout: 0));
+
+            // The optimiser will not use what it has no statistics for.
+            await connection.ExecuteAsync(new CommandDefinition(
+                $"ANALYZE TABLE `{tableName}`", cancellationToken: cancellationToken, commandTimeout: 0));
+
+            _logger?.LogInformation(
+                "EnsureSyncIndexes: created {Index} on {Table} ({Columns})",
+                indexName, tableName, string.Join(", ", required));
+
+            LogNowRedundantIndexes(tableName, indexName, required, existing);
+
+            return new SyncIndexAction(tableName, indexName, required, SyncIndexOutcome.Created);
+        }
+        catch (MySqlException ex) when (ex.Number == 1061)
+        {
+            // Duplicate key name: something already holds this name. Not a failure — but not proof the
+            // columns match either, which is why the prefix check above is the real test.
+            return new SyncIndexAction(
+                tableName, indexName, required, SyncIndexOutcome.AlreadyPresent, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            // One unusable table must not stop the others from being fixed.
+            _logger?.LogError(ex,
+                "EnsureSyncIndexes: failed to create {Index} on {Table}", indexName, tableName);
+            return new SyncIndexAction(
+                tableName, indexName, required, SyncIndexOutcome.Failed, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Reports indexes the new one makes redundant, for an operator to remove by hand.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately does not drop them: storage the library did not create is not the library's to
+    /// remove, and a DROP is the one action here that cannot be undone by re-running.
+    /// </remarks>
+    private void LogNowRedundantIndexes(
+        string tableName,
+        string createdIndexName,
+        IReadOnlyList<string> required,
+        Dictionary<string, List<string>> existing)
+    {
+        foreach (var ix in existing)
+        {
+            if (string.Equals(ix.Key, createdIndexName, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(ix.Key, "PRIMARY", StringComparison.OrdinalIgnoreCase)) continue;
+
+            // Redundant exactly when the new index's leading columns already cover this whole index.
+            if (ix.Value.Count < required.Count &&
+                required.Take(ix.Value.Count).SequenceEqual(ix.Value, StringComparer.OrdinalIgnoreCase))
+            {
+                _logger?.LogInformation(
+                    "EnsureSyncIndexes: index '{Redundant}' on {Table} ({Columns}) is now covered by " +
+                    "{Created} and can be dropped — the library does not drop it",
+                    ix.Key, tableName, string.Join(", ", ix.Value), createdIndexName);
+            }
+        }
+    }
+
     /// <summary>
     /// Ensures a single shared temp table exists with the required columns.
     /// Creates the table if missing; adds missing columns if it already exists.
