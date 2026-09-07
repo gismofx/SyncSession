@@ -359,10 +359,30 @@ public class SyncController : ControllerBase
         try
         {
             await _database.MarkSessionsProcessedAsync(request.DeviceId, request.ProcessedSessionIds);
-            await _tempTableManager.CleanupPullSessionAsync(request.PullSessionId, request.Tables.Values);
+
+            // The server staged these temp tables at pull/begin and recorded them in
+            // SyncSessionTables, so it does not need the client to describe its own state back to
+            // it. request.Tables is still accepted on the wire but deliberately ignored: every
+            // client through 1.0.0-rc.3 sends it empty, which silently made cleanup a no-op and
+            // totalRows structurally zero (Bug 3, Session 40f).
+            var sessionTables = await _database.GetSessionTablesAsync(request.PullSessionId);
+            var tables = sessionTables
+                .Where(t => !string.IsNullOrEmpty(t.TempTableName))
+                .Select(t => new SyncSessionTableMetadata
+                {
+                    TableName = t.TableName,
+                    TempTableName = t.TempTableName!,
+                    UsesSharedTable = t.UsesSharedTable,
+                    // Written at pull/begin from SnapshotRecordsForPullAsync's return value: the
+                    // column is named Estimated, the value is the actual staged count.
+                    TotalRecords = t.EstimatedRecordCount
+                })
+                .ToList();
+
+            await _tempTableManager.CleanupPullSessionAsync(request.PullSessionId, tables);
 
             // Mark pull session as completed with row counts (38l: replaces activity logger)
-            var totalRows = request.Tables.Values.Sum(t => t.TotalRecords ?? 0);
+            var totalRows = tables.Sum(t => t.TotalRecords ?? 0);
             await _database.UpdateSessionStatusAsync(
                 request.PullSessionId, SyncConstants.STATUS_COMPLETED,
                 totalRows: totalRows);
