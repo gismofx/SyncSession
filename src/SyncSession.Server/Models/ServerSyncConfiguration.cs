@@ -65,6 +65,32 @@ public class ServerSyncConfiguration : SyncConfiguration
     public int QueuePollIntervalSeconds { get; set; } = 5;
 
     /// <summary>
+    /// Whether the library creates the indexes its own pull queries need (default: <c>true</c>).
+    /// </summary>
+    /// <remarks>
+    /// The pull path filters on <c>SyncSessionId</c> and, for multi-tenant tables, <c>TenantId</c>.
+    /// Without an index covering both, MySQL abandons the single-column indexes once a device's unseen
+    /// session list grows and scans the whole table on every pull.
+    /// <para>
+    /// Set <c>false</c> where DDL is not the application's to issue — a database user without
+    /// <c>ALTER</c>, a schema owned by a migration pipeline, or a table large enough that the operator
+    /// wants to choose the moment. The check still runs and still logs what is missing, so the index
+    /// can be applied by hand; only the DDL is withheld.
+    /// </para>
+    /// </remarks>
+    public bool ManageIndexes { get; set; } = true;
+
+    /// <summary>
+    /// Seconds after boot before the index check runs (default: 30).
+    /// </summary>
+    /// <remarks>
+    /// Late enough that it competes with nothing during startup; the value exists mainly so tests do
+    /// not have to wait. The check never runs on the startup path — an index build on a large table
+    /// takes minutes, and an application that has not yet bound its port is an outage.
+    /// </remarks>
+    public int IndexCheckStartDelaySeconds { get; set; } = 30;
+
+    /// <summary>
     /// Hours of inactivity before an <c>Active</c> seed snapshot row (and its snapshot tables)
     /// is treated as orphaned and dropped by <c>TempTableCleanupService</c> (default: 4).
     /// Increase this value for very large datasets that take longer than 4 hours to stream.

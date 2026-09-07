@@ -103,6 +103,7 @@ public static class SyncSessionExtensions
         // ── Background workers ────────────────────────────────────────────────
         services.AddHostedService<SyncQueueBackgroundService>();
         services.AddHostedService<SyncCleanupBackgroundService>();
+        services.AddHostedService<SyncIndexBackgroundService>();
 
         // ── Controllers ───────────────────────────────────────────────────────
         services.AddControllers()
@@ -188,6 +189,11 @@ public static class SyncSessionExtensions
             var tempDb = tempScope.ServiceProvider.GetRequiredService<IServerDatabase>();
             await tempDb.EnsureSharedTempTablesAsync();
         }
+
+        // Sync indexes are deliberately NOT ensured here. Unlike the temp tables above they are an
+        // optimisation, not a correctness precondition, and an index build on a large table takes
+        // minutes — long enough that doing it before the app binds its port reads as an outage.
+        // SyncIndexBackgroundService does it shortly after startup instead.
 
         if (!options.ValidateSchema)
             return app;
