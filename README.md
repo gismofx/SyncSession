@@ -1,15 +1,16 @@
 # SyncSession
 
+<!-- Badges: status on the first row, licensing on the second. The NuGet badge uses `vpre` because
+     only prerelease versions are published — `nuget/v` renders "package not found" until a stable
+     1.0.0 exists, which is what it was doing. Switch it to `nuget/v` at the 1.0.0 promotion.
+     One package badge, not three: Core, Client and Server always share a version. -->
 [![Tests](https://github.com/gismofx/SyncSession/actions/workflows/test.yml/badge.svg)](https://github.com/gismofx/SyncSession/actions/workflows/test.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/gismofx/1ee76f9090126059680a6fb781cf8fa0/raw/syncsession-coverage.json)](https://github.com/gismofx/SyncSession/actions/workflows/test.yml)
-[![NuGet: Core](https://img.shields.io/nuget/v/SyncSession.Core?label=Core)](https://www.nuget.org/packages/SyncSession.Core)
-[![NuGet: Client](https://img.shields.io/nuget/v/SyncSession.Client?label=Client)](https://www.nuget.org/packages/SyncSession.Client)
-[![NuGet: Server](https://img.shields.io/nuget/v/SyncSession.Server?label=Server)](https://www.nuget.org/packages/SyncSession.Server)
-[![Downloads](https://img.shields.io/nuget/dt/SyncSession.Client?label=downloads)](https://www.nuget.org/packages/SyncSession.Client)
-[![GitHub Stars](https://img.shields.io/github/stars/gismofx/SyncSession?style=social)](https://github.com/gismofx/SyncSession)
+[![NuGet](https://img.shields.io/nuget/vpre/SyncSession.Core?label=NuGet)](https://www.nuget.org/packages/SyncSession.Core)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4?logo=dotnet)](https://dotnet.microsoft.com)
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Commercial license](https://img.shields.io/badge/Commercial-free%20to%203%20clients-green.svg)](COMMERCIAL-LICENSE.md)
-[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4?logo=dotnet)](https://dotnet.microsoft.com)
 
 **Production-ready, offline-first synchronization library for .NET applications.**
 
