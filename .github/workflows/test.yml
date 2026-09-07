@@ -30,7 +30,57 @@ jobs:
         run: dotnet build SyncSession.sln -c Release --no-restore
 
       - name: Unit tests
-        run: dotnet test tests/SyncSession.UnitTests/SyncSession.UnitTests.csproj -c Release --no-build --logger "console;verbosity=minimal"
+        run: dotnet test tests/SyncSession.UnitTests/SyncSession.UnitTests.csproj -c Release --no-build --logger "console;verbosity=minimal" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Integration tests
-        run: dotnet test tests/SyncSession.IntegrationTests/SyncSession.IntegrationTests.csproj -c Release --no-build --logger "console;verbosity=minimal"
+        run: dotnet test tests/SyncSession.IntegrationTests/SyncSession.IntegrationTests.csproj -c Release --no-build --logger "console;verbosity=minimal" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+      # Coverage is reported, never gated: no threshold until a real number has been seen for a while.
+      # Runs even when a test failed — a red suite is exactly when you want to see what was covered.
+      - name: Coverage report
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:"TestResults/**/coverage.cobertura.xml" \
+            -targetdir:"coveragereport" \
+            -reporttypes:"Html;MarkdownSummaryGithub;JsonSummary" \
+            -assemblyfilters:"+SyncSession.*;-SyncSession.*Tests"
+
+      - name: Publish coverage summary
+        if: always()
+        run: cat coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coveragereport/
+
+      # README badge: CI writes the number into a gist, shields.io renders it from there. No
+      # third-party app on the account — just a gist and a token with the gist scope.
+      # Only on a green push to main: a badge is a claim about the shipped branch, and a number
+      # from a failed run or an unmerged branch would be a lie on the front page.
+      - name: Read line coverage
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: coverage
+        run: |
+          RATE=$(jq -r '.summary.linecoverage' coveragereport/Summary.json)
+          echo "rate=${RATE}" >> $GITHUB_OUTPUT
+          # Bands, not a gate: red under 50, yellow to 75, green above. Nothing fails on this.
+          if   (( $(echo "$RATE < 50" | bc -l) )); then echo "color=critical" >> $GITHUB_OUTPUT
+          elif (( $(echo "$RATE < 75" | bc -l) )); then echo "color=yellow"   >> $GITHUB_OUTPUT
+          else                                          echo "color=success"  >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update coverage badge
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: schneegans/dynamic-badges-action@v1.8.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: syncsession-coverage.json
+          label: coverage
+          message: ${{ steps.coverage.outputs.rate }}%
+          color: ${{ steps.coverage.outputs.color }}

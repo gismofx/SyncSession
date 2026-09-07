@@ -23,14 +23,14 @@ public static class ValidateCommand
         outputDirOpt.AddAlias("-o");
 
         var cmd = new Command("validate",
-            "Validate a migrated database is fully SyncSystem-ready");
+            "Validate a migrated database is fully SyncSession-ready");
         cmd.AddOption(connectionStringOpt);
         cmd.AddOption(assemblyOpt);
         cmd.AddOption(outputDirOpt);
 
         cmd.SetHandler(async (connectionString, assemblyPath, outputDir) =>
         {
-            Console.WriteLine("[SyncSystem] Validating migrated database...");
+            Console.WriteLine("[SyncSession] Validating migrated database...");
 
             // ── Assembly scan ─────────────────────────────────────────────
             List<(string ClassName, string? TableName, bool IsMultiTenant)> entities;
@@ -97,7 +97,7 @@ public static class ValidateCommand
                         "Consider implementing IMultiTenantSyncEntity."));
 
                 // Extra: check SyncSystem indexes exist
-                var indexCheck = await CheckSyncIndexesAsync(connectionString, tableName);
+                var indexCheck = await CheckSyncIndexesAsync(connectionString, tableName, isMultiTenant);
                 assessment.Checks.AddRange(indexCheck);
 
                 // Extra: check no NULL in ModifiedByUserId
@@ -137,38 +137,71 @@ public static class ValidateCommand
         return cmd;
     }
 
+    /// <summary>
+    /// Reports whether the table carries an index the pull path can use.
+    /// </summary>
+    /// <remarks>
+    /// Decided by ordered columns, never by index name: an operator who created the right index under
+    /// their own name has nothing missing, and a name this repo has never generated is not evidence of
+    /// anything. The previous version looked for <c>IX_&lt;T&gt;_SyncSessionId</c> and
+    /// <c>IX_&lt;T&gt;_ModifiedByUserId</c> — no script, generator or sample here has ever created
+    /// either, so it warned falsely on every table since it was written.
+    /// <para>
+    /// The required set mirrors <c>MySqlServerDatabase.RequiredSyncIndexColumns</c>: <c>SyncSessionId</c>,
+    /// plus <c>TenantId</c> for a multi-tenant entity. The rule is stated in both places on purpose —
+    /// extracting it into a shared component was considered and rejected as the heavier option — so a
+    /// change to one belongs in the other on the same day.
+    /// </para>
+    /// </remarks>
     private static async Task<List<CheckResult>> CheckSyncIndexesAsync(
-        string connectionString, string tableName)
+        string connectionString, string tableName, bool isMultiTenant)
     {
-        var results = new List<CheckResult>();
+        var required = isMultiTenant
+            ? new[] { "SyncSessionId", "TenantId" }
+            : new[] { "SyncSessionId" };
+
         await using var conn = new MySqlConnection(connectionString);
         await conn.OpenAsync();
 
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            SELECT INDEX_NAME
+            SELECT INDEX_NAME, COLUMN_NAME
             FROM INFORMATION_SCHEMA.STATISTICS
             WHERE TABLE_SCHEMA = @db AND TABLE_NAME = @table
+            ORDER BY INDEX_NAME, SEQ_IN_INDEX
             """;
         cmd.Parameters.AddWithValue("@db", conn.Database);
         cmd.Parameters.AddWithValue("@table", tableName);
 
-        var indexes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        await using var r = await cmd.ExecuteReaderAsync();
-        while (await r.ReadAsync()) indexes.Add(r.GetString(0));
+        var byIndex = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        await using (var r = await cmd.ExecuteReaderAsync())
+        {
+            while (await r.ReadAsync())
+            {
+                var name = r.GetString(0);
+                if (!byIndex.TryGetValue(name, out var columns))
+                {
+                    columns = new List<string>();
+                    byIndex[name] = columns;
+                }
+                columns.Add(r.GetString(1));
+            }
+        }
 
-        var sessionIdx = $"IX_{tableName}_SyncSessionId";
-        var userIdx    = $"IX_{tableName}_ModifiedByUserId";
+        var satisfying = byIndex.FirstOrDefault(ix =>
+            ix.Value.Count >= required.Length &&
+            ix.Value.Take(required.Length).SequenceEqual(required, StringComparer.OrdinalIgnoreCase));
 
-        results.Add(indexes.Contains(sessionIdx)
-            ? new CheckResult(CheckStatus.Pass, $"Index {sessionIdx} present")
-            : new CheckResult(CheckStatus.Warn, $"Missing index {sessionIdx} — sync performance may be impacted"));
+        var columnList = string.Join(", ", required);
 
-        results.Add(indexes.Contains(userIdx)
-            ? new CheckResult(CheckStatus.Pass, $"Index {userIdx} present")
-            : new CheckResult(CheckStatus.Warn, $"Missing index {userIdx} — audit query performance may be impacted"));
-
-        return results;
+        return
+        [
+            satisfying.Key is not null
+                ? new CheckResult(CheckStatus.Pass, $"Pull index present: '{satisfying.Key}' ({columnList})")
+                : new CheckResult(CheckStatus.Warn,
+                    $"No index leads with ({columnList}) — every pull scans this table. " +
+                    "SyncSession creates it shortly after the app starts, unless ManageIndexes is disabled.")
+        ];
     }
 
     private static async Task<CheckResult> CheckNoNullsAsync(

@@ -13,11 +13,11 @@
     <Authors>gismofx</Authors>
     <Company>SyncSession</Company>
     <Product>SyncSession</Product>
-    <Copyright>Copyright © 2026 SyncSession Contributors</Copyright>
+    <Copyright>Copyright © 2026 Chad Posner (d/b/a CP Engineering)</Copyright>
     <PackageProjectUrl>https://github.com/gismofx/SyncSession</PackageProjectUrl>
     <RepositoryUrl>https://github.com/gismofx/SyncSession</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
 

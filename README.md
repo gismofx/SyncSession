@@ -1,12 +1,14 @@
 # SyncSession
 
 [![Tests](https://github.com/gismofx/SyncSession/actions/workflows/test.yml/badge.svg)](https://github.com/gismofx/SyncSession/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/gismofx/1ee76f9090126059680a6fb781cf8fa0/raw/syncsession-coverage.json)](https://github.com/gismofx/SyncSession/actions/workflows/test.yml)
 [![NuGet: Core](https://img.shields.io/nuget/v/SyncSession.Core?label=Core)](https://www.nuget.org/packages/SyncSession.Core)
 [![NuGet: Client](https://img.shields.io/nuget/v/SyncSession.Client?label=Client)](https://www.nuget.org/packages/SyncSession.Client)
 [![NuGet: Server](https://img.shields.io/nuget/v/SyncSession.Server?label=Server)](https://www.nuget.org/packages/SyncSession.Server)
 [![Downloads](https://img.shields.io/nuget/dt/SyncSession.Client?label=downloads)](https://www.nuget.org/packages/SyncSession.Client)
 [![GitHub Stars](https://img.shields.io/github/stars/gismofx/SyncSession?style=social)](https://github.com/gismofx/SyncSession)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![Commercial license](https://img.shields.io/badge/Commercial-free%20to%203%20clients-green.svg)](COMMERCIAL-LICENSE.md)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4?logo=dotnet)](https://dotnet.microsoft.com)
 
 **Production-ready, offline-first synchronization library for .NET applications.**
@@ -236,4 +238,14 @@ Contributions are welcome. Please open an issue before submitting a pull request
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+SyncSession is dual-licensed.
+
+- **[GNU AGPL-3.0-only](LICENSE)** — use it at any scale, provided applications built on it are
+  themselves offered to their users under AGPL-3.0.
+- **[Commercial license](COMMERCIAL-LICENSE.md)** — removes that obligation. **Free of charge for
+  deployments of up to 3 synced clients**; paid above that.
+
+Copyright © 2026 Chad Posner (d/b/a CP Engineering).
+
+Versions `1.0.0-rc.1` through `1.0.0-rc.3` were published under the MIT License and remain under it.
+The dual license applies from `1.0.0-rc.4` onward.

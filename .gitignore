@@ -437,3 +437,6 @@ FodyWeavers.xsd
 
 # BenchmarkDotNet artifacts
 BenchmarkDotNet.Artifacts/
+# Coverage collection and ReportGenerator output (CI publishes these as an artifact)
+TestResults/
+coveragereport/

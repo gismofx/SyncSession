@@ -86,5 +86,13 @@ MariaDB image.
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the
-[MIT License](LICENSE), the same license that covers this project.
+SyncSession is dual-licensed: [AGPL-3.0-only](LICENSE) for everyone, and a
+[commercial license](COMMERCIAL-LICENSE.md) for those who need an exception to it.
+
+By submitting a contribution you agree that it is licensed under AGPL-3.0-only **and** that you
+grant Chad Posner (d/b/a CP Engineering) the right to license your contribution under the commercial
+license as well. Without that second grant a dual-licensed project cannot accept outside code at
+all, because the maintainer would have no right to include it in a commercially licensed build.
+
+If you would rather not give that grant, open an issue describing the change instead — a
+maintainer-written implementation is welcome and costs you nothing.
