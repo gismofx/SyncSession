@@ -270,6 +270,21 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
             return 0;
         }
 
+        // Say what the server found, before the first table's own progress can arrive. Until this
+        // report, the caller has been showing "Checking for server changes..." across the whole of
+        // pull/begin — one request in which the server counts and snapshots every table — with no
+        // way to tell work from a hang. The totals are already in the response; this just says them.
+        var totalToPull = response.Tables.Values.Sum(t => t.TotalRecords ?? 0);
+        progress?.Report(new SyncProgress
+        {
+            Phase = SyncPhase.PullBegin,
+            TablesCompleted = pullStartIndex,
+            TotalTables = totalTables,
+            RecordsProcessed = 0,
+            TotalRecords = totalToPull,
+            StatusMessage = $"Found {totalToPull:N0} record(s) to download..."
+        });
+
         var processedSessionIds = new List<Guid>();
         var totalPulled = 0;
         var tableIndex = 0;
