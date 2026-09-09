@@ -61,6 +61,10 @@ public class HttpSyncServerApi : ISyncServerApi
 
         var response = await _httpClient.SendAsync(request);
 
+        // Maintenance mode refuses new sessions with 503; the server states why and for how long,
+        // and EnsureSuccessStatusCode() further down would throw both away.
+        await MaintenanceGate.ThrowIfGatedAsync(response);
+
         if ((int)response.StatusCode == 426)
         {
             var body426 = await TryRead426Body(response);

@@ -46,6 +46,9 @@ public sealed class HttpSeedServerApi : ISeedServerApi
             new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
         using var response = await _httpClient.SendAsync(
             request, HttpCompletionOption.ResponseHeadersRead, ct);
+
+        // The gated seed endpoint answers 503 in plain text, not the DTO (SyncController.cs:454-460).
+        await MaintenanceGate.ThrowIfGatedAsync(response, ct);
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct);

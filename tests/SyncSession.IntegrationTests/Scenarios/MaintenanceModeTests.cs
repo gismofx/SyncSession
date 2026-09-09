@@ -4,8 +4,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
+using SyncSession.Client.Http;
 using SyncSession.Core.Constants;
 using SyncSession.Core.DTOs;
+using SyncSession.Core.Exceptions;
 using SyncSession.Core.DTOs.Push;
 using SyncSession.IntegrationTests.Fixtures;
 using SyncSession.IntegrationTests.Infrastructure;
@@ -168,5 +170,25 @@ public class MaintenanceModeTests : IAsyncLifetime
 
         // Not 503 — gate is clear (may be 200 or validation error depending on DB state)
         ((int)response.StatusCode).Should().NotBe(503);
+    }
+
+    // ── the client turns the gated 503 into a typed exception (Session 47) ───
+
+    [Fact]
+    public async Task ClientBeginPull_WhenGated_ThrowsSyncMaintenanceExceptionCarryingTheReason()
+    {
+        using var factory = new SyncWebApplicationFactory(_connectionString);
+        using var client = factory.CreateClient();
+
+        await client.PostAsync("/api/v1/admin/maintenance/enable", null);
+
+        var api = new HttpSyncServerApi(client, "/api", Guid.NewGuid());
+
+        var ex = await Assert.ThrowsAsync<SyncMaintenanceException>(
+            () => api.BeginPullAsync(["Customers"]));
+
+        ex.ServerMessage.Should().Contain("maintenance mode",
+            "the server's own sentence is what the application shows the user");
+        ex.RetryAfterSeconds.Should().Be(60);
     }
 }
