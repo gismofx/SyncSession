@@ -20,6 +20,9 @@ namespace SyncSession.Client.Http;
 /// </summary>
 public sealed class HttpSeedServerApi : ISeedServerApi
 {
+    /// <summary>Bytes requested per read of the seed response. See the comment where it is used.</summary>
+    private const int SeedReadBufferBytes = 64 * 1024;
+
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
     private readonly ILogger<HttpSeedServerApi> _logger;
@@ -52,7 +55,12 @@ public sealed class HttpSeedServerApi : ISeedServerApi
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
-        using var reader = new StreamReader(stream);
+        // 64 KB, not StreamReader's 1 KB default. In the browser on .NET 9+, every read of a
+        // response stream is a JS promise round trip whose continuation waits on a ~4-5 ms timer,
+        // so the read size sets the seed's speed: 1 KB reads ran at 0.20 MB/s on .NET 10 (a
+        // ~45 minute seed), 64 KB at 9.35 MB/s; 256 KB gained nothing more. Pinned by
+        // HttpSeedServerApiReadBufferTests.
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: SeedReadBufferBytes);
 
         string? line;
         while ((line = await reader.ReadLineAsync(ct)) != null)
