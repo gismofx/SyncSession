@@ -75,8 +75,9 @@ internal class SyncQueueProcessor : ISyncQueueProcessor
             var tables = await _database.GetSessionTableDetailsAsync(sessionId);
             var rowCountsByTable = new Dictionary<string, int>();
 
-            await _database.ExecuteInTransactionAsync(async transaction =>
+            await ExecuteRetryingDeadlocksAsync(sessionId, async transaction =>
             {
+                rowCountsByTable.Clear(); // a retried attempt starts from nothing
                 foreach (var table in tables.OrderBy(t => t.Priority))
                 {
                     var rows = await ProcessTableAsync(sessionId, table, transaction);
@@ -113,6 +114,53 @@ internal class SyncQueueProcessor : ISyncQueueProcessor
             await _database.UpdateSessionStatusAsync(sessionId, SyncConstants.STATUS_FAILED, errorMessage: ex.Message);
             throw;
         }
+    }
+
+    /// <summary>
+    /// How many times a commit transaction is attempted when it keeps losing deadlocks.
+    /// </summary>
+    internal const int MaxCommitAttempts = 3;
+
+    /// <summary>
+    /// Runs the commit transaction, retrying it when the database picks it as a deadlock victim.
+    /// </summary>
+    /// <remarks>
+    /// MySQL/MariaDB roll the whole transaction back on a deadlock (error 1213, SQLSTATE 40001) and
+    /// ask the client to restart it; nothing has been committed and the staged temp-table rows are
+    /// untouched, so running the same work again is safe. Any other error — including a lock-wait
+    /// timeout, which is not a rollback of the whole transaction — fails the session as before.
+    /// </remarks>
+    private async Task ExecuteRetryingDeadlocksAsync(Guid sessionId, Func<IDbTransaction, Task> operations)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await _database.ExecuteInTransactionAsync(operations);
+                return;
+            }
+            catch (Exception ex) when (attempt < MaxCommitAttempts && IsDeadlock(ex))
+            {
+                _logger.LogWarning(ex,
+                    "Commit of session {SessionId} lost a deadlock (attempt {Attempt} of {MaxAttempts}); retrying",
+                    sessionId, attempt, MaxCommitAttempts);
+                await Task.Delay(Random.Shared.Next(50, 150) * attempt);
+            }
+        }
+    }
+
+    /// <summary>
+    /// True when <paramref name="ex"/>, or any exception inside it, is a deadlock-victim rollback:
+    /// SQLSTATE 40001, which is what MySQL and MariaDB report for error 1213.
+    /// </summary>
+    internal static bool IsDeadlock(Exception? ex)
+    {
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            if (e is System.Data.Common.DbException { SqlState: "40001" })
+                return true;
+        }
+        return false;
     }
 
     private async Task<int> ProcessTableAsync(

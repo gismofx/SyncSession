@@ -53,16 +53,20 @@ public class TableSyncHandler<T> : ITableSyncHandler where T : class, ISyncEntit
     }
 
     /// <inheritdoc />
-    public async Task<int> PushAsync(
+    public async Task<IReadOnlyList<PushedRecordStamp>> PushAsync(
         Guid sessionId,
         IProgress<(int Current, int Total)>? progress = null,
         CancellationToken cancellationToken = default)
     {
         var dirtyRecords = await _clientDb.GetDirtyRecordsAsync<T>(_tenantId);
-        if (!dirtyRecords.Any())
-            return 0;
-
         var recordsList = dirtyRecords.ToList();
+        if (recordsList.Count == 0)
+            return Array.Empty<PushedRecordStamp>();
+
+        // Stamp each row as it is now, before it leaves. The engine marks rows clean only after the
+        // server commits, and only those still carrying this stamp — so a row the user saves while
+        // this push is on the wire stays dirty and goes out next time.
+        var stamps = recordsList.Select(r => new PushedRecordStamp(r.Id, r.ModifiedAtUtc)).ToList();
         var total = recordsList.Count;
         var recordsProcessed = 0;
 
@@ -76,9 +80,18 @@ public class TableSyncHandler<T> : ITableSyncHandler where T : class, ISyncEntit
             progress?.Report((recordsProcessed, total));
         }
 
-        await _clientDb.MarkRecordsCleanAsync<T>(_tenantId);
+        // Deliberately NOT marked clean here: uploaded is not committed. A push the server rolls
+        // back (a deadlock, a constraint failure, a crash) must leave these rows dirty.
+        return stamps;
+    }
 
-        return total;
+    /// <inheritdoc />
+    public Task MarkPushedCleanAsync(IReadOnlyCollection<PushedRecordStamp> pushed)
+    {
+        if (pushed == null) throw new ArgumentNullException(nameof(pushed));
+        return pushed.Count == 0
+            ? Task.CompletedTask
+            : _clientDb.MarkRecordsCleanAsync<T>(pushed, _tenantId);
     }
 
     /// <inheritdoc />

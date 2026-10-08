@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using SyncSession.Core.Models;
 
 namespace SyncSession.Core.Interfaces;
 
@@ -18,16 +19,24 @@ public interface ITableSyncHandler
     Task<int> GetDirtyCountAsync();
     
     /// <summary>
-    /// Push dirty records to the server for this table
+    /// Push dirty records to the server for this table. Does <b>not</b> mark them clean — the server
+    /// has not committed them yet. Pass the result to <see cref="MarkPushedCleanAsync"/> once it has.
     /// </summary>
     /// <param name="sessionId">Push session identifier</param>
     /// <param name="progress">Optional progress reporting</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Number of records pushed</returns>
-    Task<int> PushAsync(
+    /// <returns>The records pushed, as they were when read; its count is the number pushed.</returns>
+    Task<IReadOnlyList<PushedRecordStamp>> PushAsync(
         Guid sessionId,
         IProgress<(int Current, int Total)>? progress = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Mark records clean after the server has committed the push that carried them. Rows saved
+    /// again since the push read them stay dirty.
+    /// </summary>
+    /// <param name="pushed">The result of <see cref="PushAsync"/> for the committed session.</param>
+    Task MarkPushedCleanAsync(IReadOnlyCollection<PushedRecordStamp> pushed);
     
     /// <summary>
     /// Pull records from the server for this table

@@ -8,6 +8,7 @@ using Dapper;
 using Microsoft.Data.Sqlite;
 using SyncSession.Core.Attributes;
 using SyncSession.Core.Interfaces;
+using SyncSession.Core.Models;
 using SyncSession.Core.Utilities;
 
 namespace SyncSession.Client.Database;
@@ -109,21 +110,45 @@ public class SqliteClientDatabase : IClientDatabase, IDisposable
     }
 
     /// <inheritdoc/>
-    public async Task MarkRecordsCleanAsync<T>(Guid? tenantId = null) where T : ISyncEntity
+    public async Task MarkRecordsCleanAsync<T>(IReadOnlyCollection<PushedRecordStamp> pushed, Guid? tenantId = null) where T : ISyncEntity
     {
+        if (pushed == null) throw new ArgumentNullException(nameof(pushed));
+        if (pushed.Count == 0) return;
+
         var tableName = TableNameResolver.GetTableName<T>();
-        var sql = $"UPDATE {tableName} SET IsDirty = 0 WHERE IsDirty = 1";
-        
-        // Automatic tenant filtering for multi-tenant entities
-        if (typeof(IMultiTenantSyncEntity).IsAssignableFrom(typeof(T)) && tenantId != null)
+
+        // Clear only the row that was sent, and only if it has not been saved since. ModifiedAtUtc is
+        // compared through julianday() rather than as text: the same instant can be stored in more
+        // than one text form (with or without 'T', with or without a 'Z'), and a text mismatch would
+        // leave a sent row dirty forever. julianday() parses both and compares the instant.
+        //
+        // Id is matched as text in both canonical cases. A Guid bound as a parameter reaches SQLite as
+        // upper-case text, while rows written through this library's Guid handler are lower-case, so
+        // binding the Guid itself matches nothing (observed 2026-10-07). Two exact values keep the
+        // primary-key index usable, where COLLATE NOCASE would scan the table once per row.
+        var sql = $@"UPDATE {tableName} SET IsDirty = 0
+                     WHERE Id IN (@IdLower, @IdUpper) AND IsDirty = 1
+                       AND julianday(ModifiedAtUtc) IS julianday(@ModifiedAtUtc)";
+
+        var multiTenant = typeof(IMultiTenantSyncEntity).IsAssignableFrom(typeof(T)) && tenantId != null;
+        if (multiTenant)
+            sql += " AND TenantId IN (@TenantLower, @TenantUpper)";
+
+        var tenantLower = tenantId?.ToString("D");
+        var tenantUpper = tenantLower?.ToUpperInvariant();
+        var parameters = pushed.Select(p => new
         {
-            sql += " AND TenantId = @TenantId";
-            await _connection.ExecuteAsync(sql, new { TenantId = tenantId });
-        }
-        else
-        {
-            await _connection.ExecuteAsync(sql);
-        }
+            IdLower = p.Id.ToString("D"),
+            IdUpper = p.Id.ToString("D").ToUpperInvariant(),
+            p.ModifiedAtUtc,
+            TenantLower = tenantLower,
+            TenantUpper = tenantUpper
+        });
+
+        var connection = await GetConnectionAsync();
+        using var transaction = connection.BeginTransaction();
+        await connection.ExecuteAsync(sql, parameters, transaction);
+        transaction.Commit();
     }
 
     /// <inheritdoc/>

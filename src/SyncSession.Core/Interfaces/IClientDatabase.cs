@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using SyncSession.Core.Models;
 
 namespace SyncSession.Core.Interfaces;
 
@@ -60,11 +61,20 @@ public interface IClientDatabase
     Task<IEnumerable<T>> GetDirtyRecordsAsync<T>(Guid? tenantId = null) where T : ISyncEntity;
     
     /// <summary>
-    /// Mark all dirty records as clean for a table.
+    /// Mark the given pushed records clean, and only those that have not been saved again since the
+    /// push read them. Called by the sync engine only after the server has committed the push.
     /// Table name extracted from [SyncTable] attribute.
     /// Filters by <paramref name="tenantId"/> if entity implements IMultiTenantSyncEntity.
     /// </summary>
-    Task MarkRecordsCleanAsync<T>(Guid? tenantId = null) where T : ISyncEntity;
+    /// <remarks>
+    /// Implementations must clear <c>IsDirty</c> on a row only when its <c>Id</c> matches a stamp
+    /// <b>and</b> its current <c>ModifiedAtUtc</c> still equals that stamp's value (both null counts
+    /// as equal). Never clear rows by "IsDirty = 1" alone: a row saved while the push was in flight
+    /// was not sent, and clearing it means it is never sent at all.
+    /// </remarks>
+    /// <param name="pushed">The records the push sent, as they were when it read them.</param>
+    /// <param name="tenantId">Tenant filter for multi-tenant entities.</param>
+    Task MarkRecordsCleanAsync<T>(IReadOnlyCollection<PushedRecordStamp> pushed, Guid? tenantId = null) where T : ISyncEntity;
     
     /// <summary>
     /// Upsert multiple records from the server (batched).

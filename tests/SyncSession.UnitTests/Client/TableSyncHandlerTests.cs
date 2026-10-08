@@ -66,17 +66,17 @@ public class TableSyncHandlerTests
             new ClientSyncConfiguration());
 
         // Act
-        var count = await handler.PushAsync(Guid.NewGuid());
+        var pushed = await handler.PushAsync(Guid.NewGuid());
 
         // Assert
-        count.Should().Be(0);
+        pushed.Should().BeEmpty();
         mockClient.Verify(x => x.PushBatchAsync<TestHandlerEntity>(
             It.IsAny<Guid>(),
             It.IsAny<TestHandlerEntity[]>()), Times.Never);
     }
 
     [Fact]
-    public async Task PushAsync_WithDirtyRecords_PushesBatchAndMarksClean()
+    public async Task PushAsync_WithDirtyRecords_PushesBatchButDoesNotMarkClean()
     {
         // Arrange
         var mockDb = new Mock<IClientDatabase>();
@@ -101,14 +101,18 @@ public class TableSyncHandlerTests
             new ClientSyncConfiguration { PushBatchSize = 1000 });
 
         // Act
-        var count = await handler.PushAsync(sessionId);
+        var pushed = await handler.PushAsync(sessionId);
 
         // Assert
-        count.Should().Be(2);
+        pushed.Select(p => p.Id).Should().BeEquivalentTo(dirtyRecords.Select(r => r.Id));
         mockClient.Verify(x => x.PushBatchAsync<TestHandlerEntity>(
             sessionId,
             It.Is<TestHandlerEntity[]>(b => b.Length == 2)), Times.Once);
-        mockDb.Verify(x => x.MarkRecordsCleanAsync<TestHandlerEntity>(It.IsAny<Guid?>()), Times.Once);
+        // Uploaded is not committed: marking clean belongs to the engine, after the server commits.
+        // (Until 2026-10 this test asserted the opposite — the defect that stranded rows whose
+        // push the server rolled back.)
+        mockDb.Verify(x => x.MarkRecordsCleanAsync<TestHandlerEntity>(
+            It.IsAny<IReadOnlyCollection<PushedRecordStamp>>(), It.IsAny<Guid?>()), Times.Never);
     }
 
     [Fact]
@@ -135,10 +139,10 @@ public class TableSyncHandlerTests
             new ClientSyncConfiguration { PushBatchSize = 100 });
 
         // Act
-        var count = await handler.PushAsync(sessionId);
+        var pushed = await handler.PushAsync(sessionId);
 
         // Assert
-        count.Should().Be(250);
+        pushed.Should().HaveCount(250);
         mockClient.Verify(x => x.PushBatchAsync<TestHandlerEntity>(
             sessionId,
             It.Is<TestHandlerEntity[]>(b => b.Length == 100)), Times.Exactly(2));

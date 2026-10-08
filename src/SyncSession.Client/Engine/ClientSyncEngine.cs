@@ -177,6 +177,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
 
         var totalPushed = 0;
         var tableIndex = 0;
+        var pushedByTable = new List<(TableConfig Table, IReadOnlyList<PushedRecordStamp> Pushed)>();
 
         foreach (var table in tables)
         {
@@ -209,9 +210,10 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
                 progress,
                 cancellationToken);
 
-            await _serverClient.CompleteTableAsync(sessionId, table.TableName, pushed);
+            await _serverClient.CompleteTableAsync(sessionId, table.TableName, pushed.Count);
 
-            totalPushed += pushed;
+            pushedByTable.Add((table, pushed));
+            totalPushed += pushed.Count;
         }
 
         // Complete push session
@@ -225,7 +227,12 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
 
         await _serverClient.CompletePushAsync(sessionId);
 
+        // Throws on Failed or timeout — in which case nothing below runs and every row stays dirty
+        // for the next sync. Only a confirmed commit may clear a row.
         await WaitForPushCommitAsync(sessionId, tableIndex, totalTables, progress);
+
+        foreach (var (table, pushed) in pushedByTable)
+            await table.Handler!.MarkPushedCleanAsync(pushed);
 
         return totalPushed;
     }
@@ -492,9 +499,9 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     /// <param name="dirtyCount">Pre-fetched dirty record count, used for progress reporting.</param>
     /// <param name="progress">Optional progress reporter.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Total number of records pushed.</returns>
+    /// <returns>The records pushed, stamped as they were read; not yet marked clean.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the handler has not been initialized.</exception>
-    private async Task<int> PushTableAsync(
+    private async Task<IReadOnlyList<PushedRecordStamp>> PushTableAsync(
         TableConfig table,
         Guid sessionId,
         int tableIndex,
@@ -543,9 +550,9 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
             CurrentTable = table.TableName,
             TablesCompleted = tableIndex,
             TotalTables = totalTables,
-            RecordsProcessed = pushed,
+            RecordsProcessed = pushed.Count,
             TotalRecords = dirtyCount,
-            StatusMessage = $"Completed {table.TableName}: {pushed:N0} records pushed."
+            StatusMessage = $"Completed {table.TableName}: {pushed.Count:N0} records pushed."
         });
 
         return pushed;
