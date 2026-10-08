@@ -101,7 +101,10 @@ public class ProductionDatabaseBenchmarks
     public async Task Production_MarkRecordsClean()
     {
         await _connection.ExecuteAsync("UPDATE Customers SET IsDirty = 1");
-        await _clientDb.MarkRecordsCleanAsync<Customer>();
+        var pushed = _customerBatch
+            .Select(c => new SyncSession.Core.Models.PushedRecordStamp(c.Id, c.ModifiedAtUtc))
+            .ToList();
+        await _clientDb.MarkRecordsCleanAsync<Customer>(pushed);
     }
 
     // ==================== BASELINE (Raw SQL) ====================
