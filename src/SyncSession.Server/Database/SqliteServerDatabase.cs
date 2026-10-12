@@ -153,18 +153,24 @@ public class SqliteServerDatabase : IServerDatabase
             }, transaction);
     }
 
-    public async Task<IEnumerable<Guid>> FindUnseenSessionIdsAsync(Guid deviceId)
+    public async Task<IEnumerable<Guid>> FindUnseenSessionIdsAsync(Guid deviceId, Guid? tenantId = null)
     {
-        var sessionIds = await _connection.QueryAsync<string>(@"
+        // Same tenant scoping as the MySQL implementation: another tenant's session never yields
+        // this device a row, so it only inflates the list the per-table queries are built from.
+        var tenantFilter = tenantId.HasValue
+            ? " AND (TenantId = @TenantId OR TenantId IS NULL)"
+            : "";
+
+        var sessionIds = await _connection.QueryAsync<string>($@"
             SELECT SessionId 
             FROM SessionRecords
             WHERE SessionId NOT IN (
                 SELECT SessionId 
                 FROM ClientProcessedSessions
                 WHERE DeviceId = @DeviceId
-            )
+            ){tenantFilter}
             ORDER BY CreatedAtUtc",
-            new { DeviceId = deviceId.ToString() });
+            new { DeviceId = deviceId.ToString(), TenantId = tenantId?.ToString() });
 
         return sessionIds.Select(id => Guid.Parse(id));
     }

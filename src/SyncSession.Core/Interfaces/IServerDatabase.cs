@@ -51,12 +51,17 @@ public interface IServerDatabase
     /// Finds session IDs that a specific device has not yet processed.
     /// </summary>
     /// <param name="deviceId">The device ID to check.</param>
+    /// <param name="tenantId">
+    /// When set, only sessions belonging to this tenant (or to no tenant) are returned. Pass it only
+    /// when every table being pulled is tenant-scoped: a shared table's rows reach every tenant, so
+    /// another tenant's session can still carry rows this device needs.
+    /// </param>
     /// <returns>List of unprocessed session IDs ordered by SyncVersion.</returns>
     /// <remarks>
     /// Core of session-based tracking - prevents "lost records" problem.
     /// Excludes sessions already in ClientProcessedSessions for this device.
     /// </remarks>
-    Task<IEnumerable<Guid>> FindUnseenSessionIdsAsync(Guid deviceId);
+    Task<IEnumerable<Guid>> FindUnseenSessionIdsAsync(Guid deviceId, Guid? tenantId = null);
     
     /// <summary>
     /// Marks sessions as processed by a device.
