@@ -16,15 +16,22 @@ internal class SessionTracker : ISessionTracker
     private readonly IServerDatabase _database;
     private readonly ITempTableManager _tempTableManager;
     private readonly ILogger<SessionTracker> _logger;
+    private readonly ITableMetadataCache? _metadataCache;
 
+    /// <param name="metadataCache">
+    /// Tells pull-begin which tables are tenant-scoped, so it can ask only about this tenant's
+    /// sessions. Registered by AddSyncSession; without it the unseen list is not tenant-filtered.
+    /// </param>
     public SessionTracker(
         IServerDatabase database,
         ITempTableManager tempTableManager,
-        ILogger<SessionTracker> logger)
+        ILogger<SessionTracker> logger,
+        ITableMetadataCache? metadataCache = null)
     {
         _database = database;
         _tempTableManager = tempTableManager;
         _logger = logger;
+        _metadataCache = metadataCache;
     }
 
     /// <inheritdoc/>
@@ -106,8 +113,16 @@ internal class SessionTracker : ISessionTracker
 
         var pullSessionId = Guid.NewGuid();
 
-        // Find unseen sessions for this device
-        var unseenSessionIds = (await _database.FindUnseenSessionIdsAsync(request.DeviceId)).ToList();
+        // Find unseen sessions for this device. Scoping to the device's tenant changes nothing about
+        // which rows it receives when every requested table is tenant-scoped (the snapshot filters
+        // rows by tenant anyway), and it keeps other tenants' sessions — which can never be
+        // acknowledged by this device — out of the IN list every per-table query is built from.
+        // A shared table's rows reach every tenant, so any shared table in the request turns it off.
+        var scopeToTenant = request.TenantId.HasValue
+            && _metadataCache != null
+            && request.TableNames.All(_metadataCache.IsMultiTenant);
+        var unseenSessionIds = (await _database.FindUnseenSessionIdsAsync(
+            request.DeviceId, scopeToTenant ? request.TenantId : null)).ToList();
 
         // If no unseen sessions, return empty response (no temp data to protect, no session record needed)
         if (!unseenSessionIds.Any())

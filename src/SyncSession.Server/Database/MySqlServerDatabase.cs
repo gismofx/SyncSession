@@ -178,12 +178,19 @@ public class MySqlServerDatabase : IServerDatabase
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<Guid>> FindUnseenSessionIdsAsync(Guid deviceId)
+    public async Task<IEnumerable<Guid>> FindUnseenSessionIdsAsync(Guid deviceId, Guid? tenantId = null)
     {
-        var sql = @"
+        // Another tenant's session can never yield this device a row, so it is never acknowledged and
+        // would sit in every pull's IN list forever. That list is what drives the snapshot's plan:
+        // hundreds of irrelevant ids pushed it to a full table scan on production (2026-10-11).
+        var tenantFilter = tenantId.HasValue
+            ? " AND (s.TenantId = @TenantId OR s.TenantId IS NULL)"
+            : "";
+
+        var sql = $@"
             SELECT CAST(s.SessionId AS CHAR(36)) AS SessionId
             FROM SessionRecords s
-            WHERE s.Status = 'Committed'
+            WHERE s.Status = 'Committed'{tenantFilter}
               AND NOT EXISTS (
                   SELECT 1
                   FROM ClientProcessedSessions cps
@@ -193,7 +200,8 @@ public class MySqlServerDatabase : IServerDatabase
             ORDER BY s.SyncVersion";
 
         using var connection = await GetConnectionAsync();
-        var sessionIds = await connection.QueryAsync<string>(sql, new { DeviceId = deviceId.ToString() });
+        var sessionIds = await connection.QueryAsync<string>(sql,
+            new { DeviceId = deviceId.ToString(), TenantId = tenantId?.ToString() });
         return sessionIds.Select(id => Guid.Parse(id));
     }
 
