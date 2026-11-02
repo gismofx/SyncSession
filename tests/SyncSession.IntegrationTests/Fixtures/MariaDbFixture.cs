@@ -30,8 +30,7 @@ public class MariaDbFixture : IAsyncLifetime
     {
         Console.WriteLine("🚀 Starting shared MariaDB container...");
 
-        _container = new MariaDbBuilder()
-            .WithImage("mariadb:11.2")
+        _container = new MariaDbBuilder("mariadb:11.2")
             .WithDatabase("mysql")  // Connect to default mysql database
             .WithUsername("root")   // Use root for full privileges
             .WithPassword("root")   // Root password

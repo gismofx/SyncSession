@@ -97,9 +97,9 @@ public class SeedIntegrationTests : IAsyncLifetime
         var lines = new List<SeedLine>();
         await using var stream = await response.Content.ReadAsStreamAsync();
         using var reader = new StreamReader(stream, Encoding.UTF8);
-        while (!reader.EndOfStream)
+        // ReadLineAsync returns null at end of stream; EndOfStream would block synchronously here.
+        while (await reader.ReadLineAsync() is { } line)
         {
-            var line = await reader.ReadLineAsync();
             if (string.IsNullOrWhiteSpace(line)) continue;
             lines.Add(JsonSerializer.Deserialize<SeedLine>(line,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!);
@@ -218,9 +218,8 @@ public class SeedIntegrationTests : IAsyncLifetime
         using var reader = new StreamReader(stream, Encoding.UTF8);
 
         string? snapshotStatus = null;
-        while (!reader.EndOfStream)
+        while (await reader.ReadLineAsync() is { } raw)
         {
-            var raw = await reader.ReadLineAsync();
             if (string.IsNullOrWhiteSpace(raw)) continue;
             var line = JsonSerializer.Deserialize<SeedLine>(raw,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
@@ -238,7 +237,7 @@ public class SeedIntegrationTests : IAsyncLifetime
         }
 
         // Drain remaining stream
-        while (!reader.EndOfStream) await reader.ReadLineAsync();
+        while (await reader.ReadLineAsync() is not null) { }
 
         snapshotStatus.Should().Be("Active",
             "SeedSnapshots row must be Active before first row is emitted");
