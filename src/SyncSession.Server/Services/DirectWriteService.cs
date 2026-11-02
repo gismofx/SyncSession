@@ -355,6 +355,7 @@ public class DirectWriteService : IDirectWriteService
     /// <param name="sessionId">Session ID for sync tracking</param>
     /// <param name="userId">User ID for audit trail</param>
     /// <param name="tenantId">Optional tenant ID (currently unused, reserved for future validation)</param>
+    /// <param name="transaction">The direct-write transaction, so the rows commit with their session.</param>
     /// <returns>Number of records successfully written</returns>
     private async Task<int> WriteRecordsToTableAsync(
         string tableName,

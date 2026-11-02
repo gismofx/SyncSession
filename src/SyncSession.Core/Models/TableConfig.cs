@@ -56,7 +56,7 @@ public class TableConfig
     /// <summary>
     /// Strongly-typed handler for this table's sync operations.
     /// Eliminates reflection and provides type-safe push/pull methods.
-    /// Set by <see cref="ClientSyncEngineBuilder"/> during engine construction.
+    /// Set by <c>ClientSyncEngineBuilder</c> (SyncSession.Client) during engine construction.
     /// </summary>
     public ITableSyncHandler? Handler { get; set; }
 }

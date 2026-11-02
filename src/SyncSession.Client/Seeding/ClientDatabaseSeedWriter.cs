@@ -16,7 +16,7 @@ namespace SyncSession.Client.Seeding;
 /// </summary>
 /// <remarks>
 /// Each table is written in a single <see cref="IClientDatabase.UpsertBatchAsync{T}"/> call per batch.
-/// Tenant isolation is enforced by passing <paramref name="tenantId"/> through to every upsert.
+/// Tenant isolation is enforced by passing the constructor's <c>tenantId</c> through to every upsert.
 /// </remarks>
 public sealed class ClientDatabaseSeedWriter : ISeedDatabaseWriter
 {

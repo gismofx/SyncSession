@@ -55,6 +55,8 @@ public sealed class SeedClient
     /// Each bundle contains the server's <c>RowsBundleSize</c> rows (default 100).
     /// Default 5 = 500 rows per write. Lower = more frequent progress updates; higher = fewer Worker round-trips.
     /// </param>
+    /// <param name="userId">Optional id of the signed-in user, recorded with the seed outcome on the server.</param>
+    /// <param name="userDisplayName">Optional display name for that user, recorded alongside it.</param>
     /// <returns>
     /// <see cref="SeedResult"/> containing the anchor timestamp and per-table row counts.
     /// Pass <see cref="SeedResult.Anchor"/> to the first incremental pull.

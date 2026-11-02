@@ -5,7 +5,7 @@ namespace SyncSession.Core.Models;
 /// <summary>
 /// Describes a filtered, paginated query against a sync-enabled table.
 /// Sent as the body of <c>POST /api/v1/data/{table}/query</c>.
-/// Can be built manually or via <see cref="SyncSystem.Core.Querying.QueryBuilder{T}"/>.
+/// Can be built manually or via <see cref="SyncSession.Core.Querying.QueryBuilder{T}"/>.
 /// </summary>
 public class DataQuery
 {

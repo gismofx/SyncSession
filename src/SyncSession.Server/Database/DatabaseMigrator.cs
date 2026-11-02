@@ -16,6 +16,10 @@ public static class DatabaseMigrator
     /// Ensures the database schema is up to date by running any pending migration scripts.
     /// </summary>
     /// <param name="connectionString">MySQL/MariaDB connection string</param>
+    /// <param name="provider">
+    /// Database provider whose embedded scripts to run (default <c>mysql</c>). Only used when
+    /// <paramref name="scriptsPath"/> is null.
+    /// </param>
     /// <param name="scriptsPath">Path to SQL scripts folder. Defaults to embedded scripts when null.</param>
     /// <param name="logger">Optional ILogger for structured output. Falls back to console when null.</param>
     /// <returns>True if migrations succeeded, false otherwise.</returns>

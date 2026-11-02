@@ -76,8 +76,8 @@ public sealed class SeedLine
 
     /// <summary>
     /// Raw NDJSON line string as received from the stream.
-    /// Set by <see cref="SyncSystem.Client.Http.HttpSeedServerApi"/> after deserialization.
-    /// Used by <see cref="SyncSystem.Client.Seeding.IRawSeedDatabaseWriter"/> to skip
+    /// Set by <c>HttpSeedServerApi</c> (SyncSession.Client) after deserialization.
+    /// Used by <c>IRawSeedDatabaseWriter</c> (SyncSession.Client) to skip
     /// Dictionary re-serialization in the hot path.
     /// Not serialized — populated at runtime only.
     /// </summary>

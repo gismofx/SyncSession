@@ -14,7 +14,7 @@ namespace SyncSession.Client.Seeding;
 /// the raw path. <see cref="ISeedDatabaseWriter.WriteRowsAsync"/> is never called when
 /// the raw path is active — <see cref="WriteRowsRawAsync"/> is called instead.
 ///
-/// Each string in <paramref name="rawLines"/> is a complete NDJSON line as received
+/// Each string in <c>rawLines</c> is a complete NDJSON line as received
 /// from the server, e.g.:
 /// <code>{"type":"row","table":"History","data":{"Id":"...","PatientId":"...",...}}</code>
 /// Implementations use <c>JsonDocument</c> + <c>GetRawText()</c> to extract the

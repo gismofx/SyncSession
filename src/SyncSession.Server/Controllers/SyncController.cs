@@ -433,6 +433,10 @@ public class SyncController : ControllerBase
     /// Each line is a JSON-serialized <see cref="SeedLine"/> discriminated by <c>type</c>.
     /// </summary>
     /// <param name="tenantId">Tenant whose records to stream.</param>
+    /// <param name="deviceId">
+    /// Required query parameter: the device performing the seed. The snapshot is kept per device
+    /// and tenant.
+    /// </param>
     /// <param name="ct">Cancellation token (injected by ASP.NET Core).</param>
     /// <remarks>
     /// The <c>end</c> line carries an <c>anchor</c> timestamp captured before the first query.

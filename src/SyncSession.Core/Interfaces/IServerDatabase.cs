@@ -14,7 +14,7 @@ namespace SyncSession.Core.Interfaces;
 /// <remarks>
 /// Provides a database-agnostic abstraction over session tracking, temp table management,
 /// and record upsert operations. Table names are resolved automatically from
-/// <see cref="SyncSystem.Core.Attributes.SyncTableAttribute"/> on entity types.
+/// <see cref="SyncSession.Core.Attributes.SyncTableAttribute"/> on entity types.
 /// </remarks>
 public interface IServerDatabase
 {
@@ -36,7 +36,7 @@ public interface IServerDatabase
     /// <param name="operations">Lambda containing all operations to execute in transaction</param>
     /// <returns>Task representing the transaction</returns>
     /// <remarks>
-    /// Uses the isolation level from <see cref="SyncSystem.Core.Models.SyncConfiguration"/> (default: Serializable).
+    /// Uses the isolation level from <see cref="SyncSession.Core.Models.SyncConfiguration"/> (default: Serializable).
     /// Transaction automatically commits on success, rolls back on exception and re-throws.
     /// Do not nest <see cref="ExecuteInTransactionAsync"/> calls — nested transactions are not supported.
     /// Serializable isolation prevents phantom reads during concurrent operations.
@@ -68,6 +68,7 @@ public interface IServerDatabase
     /// </summary>
     /// <param name="deviceId">The device that processed the sessions.</param>
     /// <param name="sessionIds">Session IDs that were successfully processed.</param>
+    /// <param name="transaction">Optional transaction to enlist in; see remarks for when to pass one.</param>
     /// <remarks>
     /// Called after a device successfully applies pulled records, and at push-session commit for
     /// the pushing device itself (which already holds those records and must not pull them back).
@@ -148,6 +149,10 @@ public interface IServerDatabase
     /// Creates a new sync session.
     /// </summary>
     /// <param name="session">Session object to create.</param>
+    /// <param name="transaction">
+    /// Optional transaction to enlist in, so the session row commits or rolls back with the work
+    /// it describes.
+    /// </param>
     /// <remarks>
     /// Inserts into SyncSessions table.
     /// SyncVersion is assigned automatically by database (AUTO_INCREMENT).
@@ -457,6 +462,10 @@ public interface IServerDatabase
     /// <param name="sessionIds">Session IDs to snapshot records from.</param>
     /// <param name="pullSessionId">Pull session ID to tag records with.</param>
     /// <param name="usesSharedTable">True if using shared table (includes SessionId column), false for dedicated.</param>
+    /// <param name="tenantId">
+    /// The pulling device's tenant. For a multi-tenant table only that tenant's rows are copied;
+    /// ignored for shared tables and when null.
+    /// </param>
     /// <returns>Number of records copied to temp pull table.</returns>
     /// <remarks>
     /// Copies records WHERE SyncSessionId IN (sessionIds) from source table.
@@ -484,6 +493,7 @@ public interface IServerDatabase
     /// <param name="tableName">Business table name (e.g., "Customers", "Orders")</param>
     /// <param name="records">List of entities to upsert. All must implement ISyncEntity and be of the same type.</param>
     /// <param name="sessionId">Session ID to assign to all records for sync tracking</param>
+    /// <param name="transaction">Optional transaction to enlist in, so the rows commit with their session.</param>
     /// <returns>Number of records successfully written to the database</returns>
     /// <exception cref="ArgumentException">
     /// Thrown when tableName is invalid, records list is empty, or entities are of incompatible types
@@ -634,6 +644,10 @@ public interface IServerDatabase
     /// </summary>
     /// <param name="tableName">Business table name to count from.</param>
     /// <param name="sessionIds">Session IDs to count records from.</param>
+    /// <param name="tenantId">
+    /// The pulling device's tenant. For a multi-tenant table only that tenant's rows are counted;
+    /// ignored for shared tables and when null.
+    /// </param>
     /// <returns>Number of records with SyncSessionId IN (sessionIds).</returns>
     /// <remarks>
     /// Used during pull session creation to determine temp table strategy (shared vs dedicated).

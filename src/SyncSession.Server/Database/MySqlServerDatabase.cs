@@ -1581,7 +1581,7 @@ public class MySqlServerDatabase : IServerDatabase
                 throw new ArgumentException($"All records must implement ISyncEntity. Type {recordType.Name} does not.", nameof(records));
         }
 
-        _logger.LogDebug(
+        _logger?.LogDebug(
             "UpsertDirectAsync: Upserting {RecordCount} records to {TableName}, SessionId={SessionId}",
             records.Count,
             tableName,
@@ -1619,14 +1619,14 @@ public class MySqlServerDatabase : IServerDatabase
             }
             totalWritten += written;
 
-            _logger.LogDebug(
+            _logger?.LogDebug(
                 "UpsertDirectAsync: Batch {BatchNum} wrote {RecordCount} records to {TableName}",
                 (i / batchSize) + 1,
                 written,
                 tableName);
         }
 
-        _logger.LogInformation(
+        _logger?.LogInformation(
             "UpsertDirectAsync: Successfully wrote {TotalRecords} records to {TableName}, SessionId={SessionId}",
             totalWritten,
             tableName,
