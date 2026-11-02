@@ -18,6 +18,10 @@ internal class SessionTracker : ISessionTracker
     private readonly ILogger<SessionTracker> _logger;
     private readonly ITableMetadataCache? _metadataCache;
 
+    /// <summary>Creates the tracker over the server database and its temp-table manager.</summary>
+    /// <param name="database">Server database holding sessions and business tables.</param>
+    /// <param name="tempTableManager">Chooses and manages the temp tables a push or pull stages rows in.</param>
+    /// <param name="logger">Logger.</param>
     /// <param name="metadataCache">
     /// Tells pull-begin which tables are tenant-scoped, so it can ask only about this tenant's
     /// sessions. Registered by AddSyncSession; without it the unseen list is not tenant-filtered.

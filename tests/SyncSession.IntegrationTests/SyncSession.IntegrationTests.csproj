@@ -17,7 +17,7 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
-    <PackageReference Include="MySqlConnector" Version="2.3.7" />
+    <PackageReference Include="MySqlConnector" Version="2.6.2" />
     <PackageReference Include="Testcontainers.MariaDb" Version="4.15.0" />
     <PackageReference Include="Dapper" Version="2.1.72" />
     <!-- The test host must match the framework under test: an 8.0 TestServer hosting a net10 app

@@ -38,9 +38,9 @@
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Dapper" Version="2.1.72" />
     <PackageReference Include="dbup-mysql" Version="5.0.40" />
-    <PackageReference Include="MailKit" Version="4.16.0" />
+    <PackageReference Include="MailKit" Version="4.18.2" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.15" />
-    <PackageReference Include="MySqlConnector" Version="2.3.7" />
+    <PackageReference Include="MySqlConnector" Version="2.6.2" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
     <PackageReference Include="Npgsql" Version="10.0.1" />

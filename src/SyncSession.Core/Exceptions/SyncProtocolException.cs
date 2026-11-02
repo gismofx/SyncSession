@@ -7,9 +7,9 @@ namespace SyncSession.Core.Exceptions;
 /// protocol version (<c>426 Upgrade Required</c>).
 /// </summary>
 /// <remarks>
-/// Update the <c>SyncSystem.Client</c> (and/or <c>SyncSystem.Server</c>) NuGet package
+/// Update the <c>SyncSession.Client</c> (and/or <c>SyncSession.Server</c>) NuGet package
 /// to a version that speaks a compatible protocol to resolve this error.
-/// See <see cref="SyncSystem.Core.Constants.SyncProtocolVersion"/> for version details.
+/// See <see cref="SyncSession.Core.Constants.SyncProtocolVersion"/> for version details.
 /// </remarks>
 public class SyncProtocolException : SyncException
 {

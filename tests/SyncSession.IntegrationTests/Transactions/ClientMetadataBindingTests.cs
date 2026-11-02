@@ -93,11 +93,12 @@ public class ClientMetadataBindingTests : IAsyncLifetime
     public async Task BoundTenant_RoundTrips_ThroughRealSqlite()
     {
         var tenant = Guid.NewGuid();
-        await _clientDb!.SetBoundTenantAsync(tenant);
+        var db = _clientDb!; // set by InitializeAsync before every test
+        await db.SetBoundTenantAsync(tenant);
 
-        (await _clientDb.GetBoundTenantAsync()).Should().Be(tenant);
+        (await db.GetBoundTenantAsync()).Should().Be(tenant);
         // Stored under the well-known key as the GUID string.
-        (await _clientDb.GetClientMetadataAsync(ClientMetadataKeys.BoundTenantId)).Should().Be(tenant.ToString());
+        (await db.GetClientMetadataAsync(ClientMetadataKeys.BoundTenantId)).Should().Be(tenant.ToString());
     }
 
     [Fact]

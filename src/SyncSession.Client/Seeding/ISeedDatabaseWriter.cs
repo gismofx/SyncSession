@@ -12,7 +12,7 @@ namespace SyncSession.Client.Seeding;
 /// </summary>
 /// <remarks>
 /// <see cref="ClientDatabaseSeedWriter"/> provides a built-in implementation for
-/// consumers using <see cref="SyncSystem.Core.Interfaces.IClientDatabase"/>.
+/// consumers using <see cref="SyncSession.Core.Interfaces.IClientDatabase"/>.
 /// </remarks>
 public interface ISeedDatabaseWriter
 {

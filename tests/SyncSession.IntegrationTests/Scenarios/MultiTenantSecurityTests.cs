@@ -213,8 +213,8 @@ public class MultiTenantSecurityTests : IAsyncLifetime
             pullSessionAId, "Customers", offset: 0, limit: 1000);
 
         batchA.Records.Should().HaveCount(1);
-        batchA.Records.First()["Name"].ToString().Should().Be("Customer from Tenant A");
-        batchA.Records.First()["TenantId"].ToString().Should().Be(tenantA.ToString());
+        batchA.Records.First()["Name"]?.ToString().Should().Be("Customer from Tenant A");
+        batchA.Records.First()["TenantId"]?.ToString().Should().Be(tenantA.ToString());
 
         // Cleanup pull A
         await serverDb.MarkSessionsProcessedAsync(deviceAId, new[] { pushSessionA, pushSessionB });
@@ -239,8 +239,8 @@ public class MultiTenantSecurityTests : IAsyncLifetime
             pullSessionBId, "Customers", offset: 0, limit: 1000);
 
         batchB.Records.Should().HaveCount(1);
-        batchB.Records.First()["Name"].ToString().Should().Be("Customer from Tenant B");
-        batchB.Records.First()["TenantId"].ToString().Should().Be(tenantB.ToString());
+        batchB.Records.First()["Name"]?.ToString().Should().Be("Customer from Tenant B");
+        batchB.Records.First()["TenantId"]?.ToString().Should().Be(tenantB.ToString());
 
         // Cleanup pull B
         await serverDb.MarkSessionsProcessedAsync(deviceBId, new[] { pushSessionA, pushSessionB });

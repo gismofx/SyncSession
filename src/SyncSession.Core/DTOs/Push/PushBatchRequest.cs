@@ -15,7 +15,7 @@ namespace SyncSession.Core.DTOs.Push;
 /// via <c>ITableMetadataCache.GetValidPushColumns</c> strips client-only properties
 /// (e.g., <c>IsDirty</c>, <c>SyncSessionId</c>, <c>ModifiedAtUtc</c>) before temp table insertion.
 /// </remarks>
-/// <typeparam name="T">Entity type implementing <see cref="SyncSystem.Core.Interfaces.ISyncEntity"/>.</typeparam>
+/// <typeparam name="T">Entity type implementing <see cref="SyncSession.Core.Interfaces.ISyncEntity"/>.</typeparam>
 public class PushBatchRequest<T>
 {
     /// <summary>Gets or sets the session ID this batch belongs to.</summary>

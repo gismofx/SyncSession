@@ -29,7 +29,7 @@ public class ClientSyncEngine : ISyncEngine, IDisposable
     /// Internal constructor for <see cref="ClientSyncEngine"/>. Do not call directly.
     /// </summary>
     /// <remarks>
-    /// Use <see cref="ClientSyncEngineBuilder.Build"/> to create instances with automatic
+    /// Use the <c>Build</c> overloads on <see cref="ClientSyncEngineBuilder"/> to create instances with automatic
     /// table discovery and strongly-typed handler registration.
     /// </remarks>
     internal ClientSyncEngine(

@@ -27,6 +27,10 @@ public interface ISeedServerApi
     /// <see cref="SeedLine"/> values as they are produced by the server.
     /// </summary>
     /// <param name="tenantId">Tenant whose records should be seeded.</param>
+    /// <param name="deviceId">
+    /// Device performing the seed. The server keeps one snapshot per device and tenant, so a
+    /// resumed seed reads the same snapshot.
+    /// </param>
     /// <param name="ct">Cancellation token. Cancellation aborts the stream cleanly.</param>
     /// <returns>
     /// An async sequence of <see cref="SeedLine"/> values in begin/table/row/table_end/end order.
