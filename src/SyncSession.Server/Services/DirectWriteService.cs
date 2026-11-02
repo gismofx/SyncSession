@@ -80,6 +80,7 @@ public class DirectWriteService : IDirectWriteService
             var session = new SessionRecord
             {
                 SessionId = sessionId,
+                TenantId = SessionTenantFor(tableRecords.Values.SelectMany(records => records)),
                 Status = SyncConstants.STATUS_STAGING,
                 SessionType = SyncConstants.SESSION_TYPE_DIRECT,
                 CreatedAtUtc = committedAt,
@@ -162,6 +163,7 @@ public class DirectWriteService : IDirectWriteService
             var session = new SessionRecord
             {
                 SessionId = sessionId,
+                TenantId = SessionTenantFor(new object[] { entity }),
                 Status = SyncConstants.STATUS_STAGING,
                 SessionType = SyncConstants.SESSION_TYPE_DIRECT,
                 CreatedAtUtc = committedAt,
@@ -237,6 +239,7 @@ public class DirectWriteService : IDirectWriteService
             var session = new SessionRecord
             {
                 SessionId = sessionId,
+                TenantId = SessionTenantForDelete(tableName, tenantGuid),
                 Status = SyncConstants.STATUS_STAGING,
                 SessionType = SyncConstants.SESSION_TYPE_DIRECT,
                 CreatedAtUtc = committedAt,
@@ -312,6 +315,7 @@ public class DirectWriteService : IDirectWriteService
             var session = new SessionRecord
             {
                 SessionId = sessionId,
+                TenantId = SessionTenantForDelete(tableName, tenantGuid),
                 Status = SyncConstants.STATUS_STAGING,
                 SessionType = SyncConstants.SESSION_TYPE_DIRECT,
                 CreatedAtUtc = committedAt,
@@ -388,6 +392,45 @@ public class DirectWriteService : IDirectWriteService
 
         return recordsWritten;
     }
+
+    /// <summary>
+    /// The tenant that owns a direct-write session: the one tenant every written row belongs to.
+    /// </summary>
+    /// <remarks>
+    /// Pull-begin offers a device only its own tenant's sessions plus untenanted ones
+    /// (<see cref="IServerDatabase.FindUnseenSessionIdsAsync"/>). An untenanted session holding one
+    /// tenant's rows is offered to every other tenant's devices too, yields them nothing, is never
+    /// acknowledged, and sits in their pull IN lists forever. So a session is tagged whenever it has
+    /// a single owner - and left untenanted when it touches a shared table (whose rows reach every
+    /// tenant) or rows of more than one tenant, so nothing it wrote is hidden from anyone.
+    /// </remarks>
+    /// <param name="records">Every record the session writes.</param>
+    /// <returns>The owning tenant, or null when the session has no single owner.</returns>
+    private static Guid? SessionTenantFor(IEnumerable<object> records)
+    {
+        Guid? owner = null;
+        foreach (var record in records)
+        {
+            if (record is not IMultiTenantSyncEntity multiTenant) return null;
+            if (owner is null) owner = multiTenant.TenantId;
+            else if (owner != multiTenant.TenantId) return null;
+        }
+        return owner;
+    }
+
+    /// <summary>
+    /// The tenant that owns a direct soft-delete session: the caller's tenant, when the table is
+    /// tenant-scoped (the delete's WHERE clause already confines it to that tenant's row).
+    /// </summary>
+    /// <remarks>
+    /// Without a tenant argument the row's tenant is unknown here, so the session stays untenanted
+    /// rather than guessing - the pre-existing behaviour, offered to every tenant.
+    /// </remarks>
+    /// <param name="tableName">Registered sync table name.</param>
+    /// <param name="tenantGuid">The caller's tenant, if given.</param>
+    /// <returns>The owning tenant, or null.</returns>
+    private Guid? SessionTenantForDelete(string tableName, Guid? tenantGuid) =>
+        tenantGuid is not null && _metadataCache.IsMultiTenant(tableName) ? tenantGuid : null;
 
     /// <summary>
     /// Validate tenant authorization for all multi-tenant entities in the batch.
