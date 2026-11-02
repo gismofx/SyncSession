@@ -154,11 +154,11 @@ public class PullIntegrationTests : IAsyncLifetime
         batch1.TotalRecords.Should().Be(1);
 
         var record = batch1.Records.First();
-        record["Id"].ToString().Should().Be(customerId.ToString());
-        record["Name"].ToString().Should().Be("Alice Smith");
-        record["Email"].ToString().Should().Be("alice@example.com");
-        record["Phone"].ToString().Should().Be("555-0001");
-        record["ModifiedByUserId"].ToString().Should().Be("user-alice");
+        record["Id"]?.ToString().Should().Be(customerId.ToString());
+        record["Name"]?.ToString().Should().Be("Alice Smith");
+        record["Email"]?.ToString().Should().Be("alice@example.com");
+        record["Phone"]?.ToString().Should().Be("555-0001");
+        record["ModifiedByUserId"]?.ToString().Should().Be("user-alice");
 
         // Step 4: Complete pull session
         var completeRequest = new PullSessionCompleteRequest
@@ -299,17 +299,17 @@ public class PullIntegrationTests : IAsyncLifetime
         batch2.HasMore.Should().BeFalse();
         batch2.TotalRecords.Should().Be(2);
 
-        var recordA = batch2.Records.FirstOrDefault(r => Guid.Parse(r["Id"].ToString()) == customerAId);
-        var recordB = batch2.Records.FirstOrDefault(r => Guid.Parse(r["Id"].ToString()) == customerBId);
+        var recordA = batch2.Records.FirstOrDefault(r => Guid.TryParse(r["Id"]?.ToString(), out var id) && id == customerAId);
+        var recordB = batch2.Records.FirstOrDefault(r => Guid.TryParse(r["Id"]?.ToString(), out var id) && id == customerBId);
 
         recordA.Should().NotBeNull("record A should be in pull batch");
         recordB.Should().NotBeNull("record B should be in pull batch");
 
-        recordA!["Name"].ToString().Should().Be("Alice Anderson");
-        recordA["ModifiedByUserId"].ToString().Should().Be("user-alice");
+        recordA!["Name"]?.ToString().Should().Be("Alice Anderson");
+        recordA["ModifiedByUserId"]?.ToString().Should().Be("user-alice");
 
-        recordB!["Name"].ToString().Should().Be("Bob Brown");
-        recordB["ModifiedByUserId"].ToString().Should().Be("user-bob");
+        recordB!["Name"]?.ToString().Should().Be("Bob Brown");
+        recordB["ModifiedByUserId"]?.ToString().Should().Be("user-bob");
 
         // Step 6: Complete pull session
         await serverDb.MarkSessionsProcessedAsync(device3Id, new[] { session1Id, session2Id });
@@ -425,7 +425,7 @@ public class PullIntegrationTests : IAsyncLifetime
         batchCount.Should().Be(expectedBatches, $"expected {expectedBatches} batches");
 
         // Verify unique IDs (no duplicates)
-        var uniqueIds = allRecords.Select(r => r["Id"].ToString()).Distinct().Count();
+        var uniqueIds = allRecords.Select(r => r["Id"]?.ToString()).Distinct().Count();
         uniqueIds.Should().Be(totalRecords, "all records are unique");
 
         // Step 5: Complete pull session
@@ -593,14 +593,14 @@ public class PullIntegrationTests : IAsyncLifetime
 
         pull2Batch.Records.Should().HaveCount(2, "both records present");
         
-        var recordA = pull2Batch.Records.FirstOrDefault(r => Guid.Parse(r["Id"].ToString()) == customerAId);
-        var recordC = pull2Batch.Records.FirstOrDefault(r => Guid.Parse(r["Id"].ToString()) == customerCId);
+        var recordA = pull2Batch.Records.FirstOrDefault(r => Guid.TryParse(r["Id"]?.ToString(), out var id) && id == customerAId);
+        var recordC = pull2Batch.Records.FirstOrDefault(r => Guid.TryParse(r["Id"]?.ToString(), out var id) && id == customerCId);
 
         recordA.Should().NotBeNull("Alice from session1 present");
         recordC.Should().NotBeNull("Charlie from session2 present");
 
-        recordA!["Name"].ToString().Should().Be("Alice from ClientA");
-        recordC!["Name"].ToString().Should().Be("Charlie from ClientC");
+        recordA!["Name"]?.ToString().Should().Be("Alice from ClientA");
+        recordC!["Name"]?.ToString().Should().Be("Charlie from ClientC");
 
         // Complete second pull
         await serverDb.MarkSessionsProcessedAsync(deviceBId, new[] { session1Id, session2Id });

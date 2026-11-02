@@ -21,9 +21,10 @@ namespace SyncSession.IntegrationTests.Scenarios;
 /// </summary>
 public class CleanupTests : IAsyncLifetime
 {
-    private SqliteConnection? _connection;
-    private SqliteServerDatabase? _database;
-    private ServerSyncConfiguration? _config;
+    // Assigned in InitializeAsync, which xUnit runs before every test, so no test sees them null.
+    private SqliteConnection _connection = null!;
+    private SqliteServerDatabase _database = null!;
+    private ServerSyncConfiguration _config = null!;
 
     public async Task InitializeAsync()
     {
@@ -186,7 +187,7 @@ public class CleanupTests : IAsyncLifetime
         cleanedCount.Should().Be(1);
 
         // Verify session marked as Failed
-        var session = await _connection.QuerySingleOrDefaultAsync<dynamic>(@"
+        var session = await _connection.QuerySingleAsync<dynamic>(@"
             SELECT Status, ErrorMessage FROM SessionRecords WHERE SessionId = @SessionId",
             new { SessionId = staleSessionId.ToString() });
 
@@ -432,7 +433,7 @@ public class CleanupTests : IAsyncLifetime
         cleanedCount.Should().Be(1);
 
         // Verify session marked as Failed
-        var session = await _connection.QuerySingleOrDefaultAsync<dynamic>(@"
+        var session = await _connection.QuerySingleAsync<dynamic>(@"
             SELECT Status, ErrorMessage FROM SessionRecords WHERE SessionId = @SessionId",
             new { SessionId = stalePullSessionId.ToString() });
 

@@ -1137,7 +1137,7 @@ public class ServerDatabaseTests
         // Assert - Customers uses shared table
         // Assert not null first
         customersInfo.Should().NotBeNull("table info should exist");
-        customersInfo.Value.TempTableName.Should().Be("TempPushCustomers", "small datasets use shared table");
+        customersInfo!.Value.TempTableName.Should().Be("TempPushCustomers", "small datasets use shared table");
         customersInfo.Value.UsesSharedTable.Should().BeTrue("Customers should use shared table");
 
         // Act - Get Orders table info (dedicated)
@@ -1145,7 +1145,7 @@ public class ServerDatabaseTests
 
         // Assert - Orders uses dedicated table with unique name
         ordersInfo.Should().NotBeNull("table info should exist");
-        ordersInfo.Value.TempTableName.Should().StartWith("TempPush_Orders_", "large datasets use dedicated table");
+        ordersInfo!.Value.TempTableName.Should().StartWith("TempPush_Orders_", "large datasets use dedicated table");
         ordersInfo.Value.UsesSharedTable.Should().BeFalse("Orders should use dedicated table");
 
         // Verify dedicated table actually exists

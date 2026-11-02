@@ -147,6 +147,7 @@ public static class SqliteSchemaHelper
         if (attr == null)
             throw new InvalidOperationException(
                 $"Type {entityType.Name} must have [SyncTable] attribute.");
-        return attr.TableName;
+        // A parameterless [SyncTable] names the table after the class, as the library's own resolver does.
+        return attr.TableName ?? entityType.Name;
     }
 }
